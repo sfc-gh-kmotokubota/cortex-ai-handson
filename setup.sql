@@ -8,6 +8,32 @@
 -- ============================================================================
 
 -- ============================================================================
+-- 0. Snowflake Workspace 用 GitHub リポジトリ連携
+--    ※ Snowsight のワークシートで最初に実行してください
+--    ※ ACCOUNTADMIN 権限が必要です
+-- ============================================================================
+
+USE ROLE ACCOUNTADMIN;
+
+-- ユーザー個人のデータベースに切り替え（Workspace のデフォルト）
+SET my_db = 'USER$' || CURRENT_USER();
+USE DATABASE IDENTIFIER($my_db);
+
+-- GitHub との API 統合を作成
+CREATE OR REPLACE API INTEGRATION git_api_integration
+    API_PROVIDER = git_https_api
+    API_ALLOWED_PREFIXES = ('https://github.com/kmotokubota/')
+    ENABLED = TRUE;
+
+-- GitHub リポジトリを登録（Workspace からノートブックをインポートするために必要）
+CREATE OR REPLACE GIT REPOSITORY cortex_ai_handson
+    API_INTEGRATION = git_api_integration
+    ORIGIN = 'https://github.com/kmotokubota/cortex-ai-handson.git';
+
+-- 登録確認
+SHOW GIT REPOSITORIES;
+
+-- ============================================================================
 -- 1. データベース・スキーマ・ウェアハウス作成
 -- ============================================================================
 
