@@ -59,7 +59,7 @@ ALTER ACCOUNT SET CORTEX_ENABLED_CROSS_REGION = 'ANY_REGION';
 -- ============================================================================
 
 -- ----------------------------------------------------------------------------
--- 2.1 顧客マスタ (DIM_CUSTOMER) - 300人
+-- 2.1 顧客マスタ (DIM_CUSTOMER) - 100人
 -- ----------------------------------------------------------------------------
 CREATE OR REPLACE TABLE DIM_CUSTOMER (
     CUSTOMER_ID VARCHAR(20) PRIMARY KEY,
@@ -159,7 +159,7 @@ CREATE OR REPLACE TABLE FACT_PORTFOLIO (
 COMMENT ON TABLE FACT_PORTFOLIO IS '顧客のポートフォリオ（保有資産明細）';
 
 -- ----------------------------------------------------------------------------
--- 2.5 取引履歴 (FACT_TRANSACTION) - 500件
+-- 2.5 取引履歴 (FACT_TRANSACTION) - 150件
 -- ----------------------------------------------------------------------------
 CREATE OR REPLACE TABLE FACT_TRANSACTION (
     TRANSACTION_ID VARCHAR(20) PRIMARY KEY,
@@ -456,7 +456,7 @@ SELECT 'Part 1: DDL completed successfully!' AS STATUS;
 
 -- ============================================================================
 -- 証券営業インテリジェンス デモ セットアップSQL（汎用版）
--- Part 2: 顧客データ（300人）& 家族・ライフイベント
+-- Part 2: 顧客データ（100人）& 家族・ライフイベント
 -- ============================================================================
 
 USE DATABASE SNOWFINANCE_DB;
@@ -507,93 +507,110 @@ INSERT INTO DIM_CUSTOMER VALUES
 ('C030', '坂本由紀', 'サカモトユキ', 33, '女性', '1992-07-18', '会社員', 'IT企業', 'エンジニア', '東京都', '渋谷区', '700万円以上', 25000000, 20000000, '積極的', '資産形成', 5, 'シルバー', 'RM012', '渡辺正樹', '2023-01-01', '2025-01-15', TRUE, TRUE, FALSE, 'FIRE志向、積極投資希望', CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP());
 
 -- ============================================================================
--- 2. 追加顧客データ（270人）- プロシージャで生成
+-- 2. 追加顧客データ（70人）- SQL GENERATOR で一括生成
 -- ============================================================================
 
 -- 顧客データ生成用プロシージャ
-CREATE OR REPLACE PROCEDURE GENERATE_ADDITIONAL_CUSTOMERS()
-RETURNS VARCHAR
-LANGUAGE JAVASCRIPT
-EXECUTE AS CALLER
-AS
-$$
-    var surnames = ['田中', '山本', '中島', '小林', '加藤', '吉田', '山田', '佐々木', '高橋', '伊藤', 
-                    '渡辺', '斎藤', '鈴木', '松本', '井上', '木村', '林', '清水', '山口', '森'];
-    var firstnames_m = ['太郎', '一郎', '健太', '翔太', '大輔', '拓也', '直樹', '誠', '浩二', '正樹'];
-    var firstnames_f = ['花子', '美咲', '由美', '恵子', '理恵', '直美', '京子', '智子', '美香', '裕子'];
-    var occupations = ['会社員', '会社役員', '公務員', '医師', '弁護士', '税理士', '自営業', '年金生活者', 
-                       '経営者', 'コンサルタント', '不動産業', '農業', '教員', '薬剤師', 'エンジニア'];
-    var prefectures = ['東京都', '神奈川県', '大阪府', '愛知県', '埼玉県', '千葉県', '兵庫県', '北海道', 
-                       '福岡県', '京都府', '静岡県', '広島県', '茨城県', '新潟県', '宮城県'];
-    var segments = ['プライベートバンク', 'ゴールド', 'シルバー', 'ブロンズ'];
-    var risk_tolerances = ['保守的', 'やや保守的', 'やや積極的', '積極的'];
-    var purposes = ['資産保全', '資産形成', '老後資金', '年金補完', '教育資金', '事業承継'];
-    var income_bands = ['500万円以上', '800万円以上', '1000万円以上', '1500万円以上', '2000万円以上', '5000万円以上'];
-    
-    var insertCount = 0;
-    
-    for (var i = 31; i <= 300; i++) {
-        var customerId = 'C' + String(i).padStart(3, '0');
-        var gender = Math.random() > 0.5 ? '男性' : '女性';
-        var surname = surnames[Math.floor(Math.random() * surnames.length)];
-        var firstname = gender === '男性' ? 
-            firstnames_m[Math.floor(Math.random() * firstnames_m.length)] : 
-            firstnames_f[Math.floor(Math.random() * firstnames_f.length)];
-        var name = surname + firstname;
-        var age = Math.floor(Math.random() * 50) + 30; // 30-79歳
-        var occupation = occupations[Math.floor(Math.random() * occupations.length)];
-        var prefecture = prefectures[Math.floor(Math.random() * prefectures.length)];
-        
-        // 資産額（セグメントに応じて調整）
-        var segmentIdx = Math.floor(Math.random() * 4);
-        var segment = segments[segmentIdx];
-        var totalAssets, liquidAssets;
-        
-        if (segment === 'プライベートバンク') {
-            totalAssets = Math.floor(Math.random() * 1500000000) + 300000000; // 3-18億
-            liquidAssets = Math.floor(totalAssets * (0.4 + Math.random() * 0.3));
-        } else if (segment === 'ゴールド') {
-            totalAssets = Math.floor(Math.random() * 200000000) + 100000000; // 1-3億
-            liquidAssets = Math.floor(totalAssets * (0.4 + Math.random() * 0.3));
-        } else if (segment === 'シルバー') {
-            totalAssets = Math.floor(Math.random() * 70000000) + 30000000; // 3000万-1億
-            liquidAssets = Math.floor(totalAssets * (0.5 + Math.random() * 0.3));
-        } else {
-            totalAssets = Math.floor(Math.random() * 20000000) + 10000000; // 1000万-3000万
-            liquidAssets = Math.floor(totalAssets * (0.6 + Math.random() * 0.3));
-        }
-        
-        var riskTolerance = risk_tolerances[Math.floor(Math.random() * risk_tolerances.length)];
-        var purpose = purposes[Math.floor(Math.random() * purposes.length)];
-        var incomeBand = income_bands[Math.floor(Math.random() * income_bands.length)];
-        var rmId = 'RM' + String(Math.floor(Math.random() * 12) + 1).padStart(3, '0');
-        var hasNisa = Math.random() > 0.3;
-        var hasIdeco = Math.random() > 0.5;
-        var hasTrust = Math.random() > 0.7;
-        
-        var sql = `INSERT INTO DIM_CUSTOMER (
-            CUSTOMER_ID, CUSTOMER_NAME, AGE, GENDER, OCCUPATION, PREFECTURE, 
-            ANNUAL_INCOME_BAND, TOTAL_ASSETS, LIQUID_ASSETS, RISK_TOLERANCE, 
-            INVESTMENT_PURPOSE, SEGMENT, RM_ID, HAS_NISA, HAS_IDECO, HAS_TRUST_ACCOUNT
-        ) VALUES (
-            '${customerId}', '${name}', ${age}, '${gender}', '${occupation}', '${prefecture}',
-            '${incomeBand}', ${totalAssets}, ${liquidAssets}, '${riskTolerance}',
-            '${purpose}', '${segment}', '${rmId}', ${hasNisa}, ${hasIdeco}, ${hasTrust}
-        )`;
-        
-        try {
-            snowflake.execute({sqlText: sql});
-            insertCount++;
-        } catch (err) {
-            // Skip duplicates or errors
-        }
-    }
-    
-    return 'Generated ' + insertCount + ' additional customers';
-$$;
-
--- 顧客データを生成
-CALL GENERATE_ADDITIONAL_CUSTOMERS();
+-- 追加顧客 70名を SQL GENERATOR で一括生成 (C031-C100)
+INSERT INTO DIM_CUSTOMER (
+    CUSTOMER_ID, CUSTOMER_NAME, AGE, GENDER, OCCUPATION, PREFECTURE,
+    ANNUAL_INCOME_BAND, TOTAL_ASSETS, LIQUID_ASSETS, RISK_TOLERANCE,
+    INVESTMENT_PURPOSE, SEGMENT, RM_ID, HAS_NISA, HAS_IDECO, HAS_TRUST_ACCOUNT,
+    INVESTMENT_EXPERIENCE_YEARS, TOTAL_FAMILY_MEMBERS
+)
+WITH g AS (
+    SELECT
+        ROW_NUMBER() OVER (ORDER BY SEQ4()) AS rn,
+        UNIFORM(0, 19, RANDOM()) AS s_idx,
+        UNIFORM(0,  9, RANDOM()) AS fn_idx,
+        UNIFORM(30, 79, RANDOM()) AS age,
+        UNIFORM(0,  1, RANDOM()) AS gd,
+        UNIFORM(0, 14, RANDOM()) AS occ_idx,
+        UNIFORM(0, 14, RANDOM()) AS pref_idx,
+        UNIFORM(0,  3, RANDOM()) AS seg_idx,
+        UNIFORM(0,  3, RANDOM()) AS risk_idx,
+        UNIFORM(0,  5, RANDOM()) AS purp_idx,
+        UNIFORM(0,  5, RANDOM()) AS inc_idx,
+        UNIFORM(1, 12, RANDOM()) AS rm_num,
+        UNIFORM(0, 99, RANDOM()) AS r_nisa,
+        UNIFORM(0, 99, RANDOM()) AS r_ideco,
+        UNIFORM(0, 99, RANDOM()) AS r_trust,
+        UNIFORM(1, 30, RANDOM()) AS exp_yr,
+        UNIFORM(1,  4, RANDOM()) AS fam_cnt,
+        UNIFORM(0, 99, RANDOM()) AS asset_pct
+    FROM TABLE(GENERATOR(ROWCOUNT => 70))
+), seg AS (
+    SELECT g.*,
+        CASE seg_idx
+            WHEN 0 THEN 'プライベートバンク'
+            WHEN 1 THEN 'ゴールド'
+            WHEN 2 THEN 'シルバー'
+            ELSE        'ブロンズ'
+        END AS seg_val,
+        CASE seg_idx
+            WHEN 0 THEN 300000000 + CAST(asset_pct / 100.0 * 1500000000 AS BIGINT)
+            WHEN 1 THEN 100000000 + CAST(asset_pct / 100.0 *  200000000 AS BIGINT)
+            WHEN 2 THEN  30000000 + CAST(asset_pct / 100.0 *   70000000 AS BIGINT)
+            ELSE         10000000 + CAST(asset_pct / 100.0 *   20000000 AS BIGINT)
+        END AS ta
+    FROM g
+)
+SELECT
+    'C' || LPAD(CAST(rn + 30 AS VARCHAR), 3, '0'),
+    CASE s_idx
+        WHEN 0 THEN '田中' WHEN 1 THEN '山本' WHEN 2 THEN '中島' WHEN 3 THEN '小林'
+        WHEN 4 THEN '加藤' WHEN 5 THEN '吉田' WHEN 6 THEN '山田' WHEN 7 THEN '佐々木'
+        WHEN 8 THEN '高橋' WHEN 9 THEN '伊藤' WHEN 10 THEN '渡辺' WHEN 11 THEN '斎藤'
+        WHEN 12 THEN '鈴木' WHEN 13 THEN '松本' WHEN 14 THEN '井上' WHEN 15 THEN '木村'
+        WHEN 16 THEN '林'  WHEN 17 THEN '清水' WHEN 18 THEN '山口' ELSE '森'
+    END ||
+    CASE WHEN gd = 0 THEN
+        CASE fn_idx WHEN 0 THEN '太郎' WHEN 1 THEN '一郎' WHEN 2 THEN '健太'
+            WHEN 3 THEN '翔太' WHEN 4 THEN '大輔' WHEN 5 THEN '拓也'
+            WHEN 6 THEN '直樹' WHEN 7 THEN '誠'  WHEN 8 THEN '浩二' ELSE '正樹' END
+    ELSE
+        CASE fn_idx WHEN 0 THEN '花子' WHEN 1 THEN '美咲' WHEN 2 THEN '由美'
+            WHEN 3 THEN '恵子' WHEN 4 THEN '理恵' WHEN 5 THEN '直美'
+            WHEN 6 THEN '京子' WHEN 7 THEN '智子' WHEN 8 THEN '美香' ELSE '裕子' END
+    END,
+    age,
+    CASE WHEN gd = 0 THEN '男性' ELSE '女性' END,
+    CASE occ_idx
+        WHEN 0 THEN '会社員'     WHEN 1 THEN '会社役員'   WHEN 2 THEN '公務員'
+        WHEN 3 THEN '医師'       WHEN 4 THEN '弁護士'     WHEN 5 THEN '税理士'
+        WHEN 6 THEN '自営業'     WHEN 7 THEN '年金生活者' WHEN 8 THEN '経営者'
+        WHEN 9 THEN 'コンサルタント' WHEN 10 THEN '不動産業' WHEN 11 THEN '農業'
+        WHEN 12 THEN '教員'      WHEN 13 THEN '薬剤師'    ELSE 'エンジニア'
+    END,
+    CASE pref_idx
+        WHEN 0 THEN '東京都'   WHEN 1 THEN '神奈川県' WHEN 2 THEN '大阪府'
+        WHEN 3 THEN '愛知県'   WHEN 4 THEN '埼玉県'   WHEN 5 THEN '千葉県'
+        WHEN 6 THEN '兵庫県'   WHEN 7 THEN '北海道'   WHEN 8 THEN '福岡県'
+        WHEN 9 THEN '京都府'   WHEN 10 THEN '静岡県'  WHEN 11 THEN '広島県'
+        WHEN 12 THEN '茨城県'  WHEN 13 THEN '新潟県'  ELSE '宮城県'
+    END,
+    CASE inc_idx
+        WHEN 0 THEN '500万円以上'  WHEN 1 THEN '800万円以上'  WHEN 2 THEN '1000万円以上'
+        WHEN 3 THEN '1500万円以上' WHEN 4 THEN '2000万円以上' ELSE '5000万円以上'
+    END,
+    ta,
+    CAST(ta * (0.4 + asset_pct / 300.0) AS BIGINT),
+    CASE risk_idx
+        WHEN 0 THEN '保守的' WHEN 1 THEN 'やや保守的'
+        WHEN 2 THEN 'やや積極的' ELSE '積極的'
+    END,
+    CASE purp_idx
+        WHEN 0 THEN '資産保全' WHEN 1 THEN '資産形成' WHEN 2 THEN '老後資金'
+        WHEN 3 THEN '年金補完' WHEN 4 THEN '教育資金' ELSE '事業承継'
+    END,
+    seg_val,
+    'RM' || LPAD(CAST(rm_num AS VARCHAR), 3, '0'),
+    (r_nisa  > 30),
+    (r_ideco > 50),
+    (r_trust > 70),
+    exp_yr,
+    fam_cnt
+FROM seg;
 
 -- ============================================================================
 -- 3. 家族データ
@@ -635,47 +652,28 @@ INSERT INTO DIM_FAMILY VALUES
 ('F021', 'C006', '次女', '渡辺理香', 27, 'フリーランス', TRUE, 3, NULL, CURRENT_TIMESTAMP());
 
 -- 追加の家族データ（残りの顧客用）生成
-CREATE OR REPLACE PROCEDURE GENERATE_FAMILY_DATA()
-RETURNS VARCHAR
-LANGUAGE JAVASCRIPT
-EXECUTE AS CALLER
-AS
-$$
-    var relationships = ['配偶者', '長男', '長女', '次男', '次女', '孫'];
-    var insertCount = 0;
-    var familyId = 22; // F022から開始
-    
-    for (var customerId = 7; customerId <= 300; customerId++) {
-        var cid = 'C' + String(customerId).padStart(3, '0');
-        var numFamily = Math.floor(Math.random() * 4) + 1; // 1-4人の家族
-        
-        for (var j = 0; j < numFamily; j++) {
-            var fid = 'F' + String(familyId).padStart(3, '0');
-            var rel = relationships[Math.min(j, relationships.length - 1)];
-            var age = Math.floor(Math.random() * 50) + 20;
-            var isHeir = (rel === '配偶者' || rel === '長男' || rel === '長女');
-            var priority = isHeir ? (j + 1) : null;
-            
-            var sql = `INSERT INTO DIM_FAMILY (
-                FAMILY_ID, CUSTOMER_ID, RELATIONSHIP, FAMILY_AGE, IS_HEIR, HEIR_PRIORITY
-            ) VALUES (
-                '${fid}', '${cid}', '${rel}', ${age}, ${isHeir}, ${priority}
-            )`;
-            
-            try {
-                snowflake.execute({sqlText: sql});
-                insertCount++;
-                familyId++;
-            } catch (err) {
-                // Skip errors
-            }
-        }
-    }
-    
-    return 'Generated ' + insertCount + ' family records';
-$$;
-
-CALL GENERATE_FAMILY_DATA();
+-- 家族データ追加分（C007-C100）- SQL GENERATOR で一括生成 (150行)
+INSERT INTO DIM_FAMILY (FAMILY_ID, CUSTOMER_ID, RELATIONSHIP, FAMILY_AGE, IS_HEIR, HEIR_PRIORITY, CREATED_AT)
+WITH g AS (
+    SELECT
+        ROW_NUMBER() OVER (ORDER BY SEQ4()) AS rn,
+        UNIFORM(7, 100, RANDOM()) AS cust_num,
+        UNIFORM(0,  5, RANDOM()) AS rel_idx,
+        UNIFORM(20, 69, RANDOM()) AS fam_age
+    FROM TABLE(GENERATOR(ROWCOUNT => 150))
+)
+SELECT
+    'F' || LPAD(CAST(rn + 21 AS VARCHAR), 3, '0'),
+    'C' || LPAD(CAST(cust_num AS VARCHAR), 3, '0'),
+    CASE rel_idx
+        WHEN 0 THEN '配偶者' WHEN 1 THEN '長男' WHEN 2 THEN '長女'
+        WHEN 3 THEN '次男'  WHEN 4 THEN '次女' ELSE '孫'
+    END,
+    fam_age,
+    (rel_idx <= 2),
+    CASE WHEN rel_idx <= 2 THEN rel_idx + 1 ELSE NULL END,
+    CURRENT_TIMESTAMP()
+FROM g;
 
 -- ============================================================================
 -- 4. ライフイベントデータ
@@ -693,18 +691,18 @@ INSERT INTO DIM_LIFE_EVENT VALUES
 
 -- 高橋健一様のライフイベント
 ('E006', 'C004', '事業拡大', 'クリニック分院開設', '2026-06-01', 100000000, '中', '計画中', NULL, '2024-09-01', '2025-01-12', '都内に2院目を検討'),
-('E007', 'C004', '教育資金', '長女の大学院留学', '2025-09-01', 15000000, '高', '確定', 'F016', '2024-03-01', '2024-12-20', '英国大学院、1年間'),
+('E007', 'C004', '教育資金', '長女の大学院留学', '2027-09-01', 15000000, '高', '確定', 'F016', '2024-03-01', '2024-12-20', '英国大学院、1年間'),
 
 -- 渡辺正樹様のライフイベント
 ('E008', 'C006', '慈善活動', '財団設立・寄付', '2026-12-31', 300000000, '低', '検討中', NULL, '2024-10-01', '2024-10-01', 'テクノロジー教育支援財団'),
-('E009', 'C006', '不動産購入', '軽井沢別荘購入', '2025-06-01', 80000000, '中', '相談中', NULL, '2025-01-15', '2025-01-15', NULL),
+('E009', 'C006', '不動産購入', '軽井沢別荘購入', '2027-06-01', 80000000, '中', '相談中', NULL, '2025-01-15', '2025-01-15', NULL),
 
 -- その他顧客のライフイベント
 ('E010', 'C011', '事業承継', '後継者問題の相談', '2028-03-31', 200000000, '中', '相談中', NULL, '2024-11-01', '2025-01-05', '後継者未定'),
 ('E011', 'C012', '事業拡大', '分院展開資金', '2026-03-01', 50000000, '中', '計画中', NULL, '2024-08-01', '2025-01-12', NULL),
 ('E012', 'C016', '教育資金', '子供の私立中学進学', '2026-04-01', 10000000, '高', '確定', NULL, '2024-06-01', '2024-12-25', NULL),
-('E013', 'C019', '資産整理', '農地の売却・現金化', '2025-12-31', 150000000, '高', '相談中', NULL, '2024-10-01', '2024-12-18', '後継者不在のため'),
-('E014', 'C021', '住宅購入', '住宅ローン借り換え', '2025-06-01', 30000000, '中', '検討中', NULL, '2024-12-01', '2025-01-08', NULL),
+('E013', 'C019', '資産整理', '農地の売却・現金化', '2027-12-31', 150000000, '高', '相談中', NULL, '2024-10-01', '2024-12-18', '後継者不在のため'),
+('E014', 'C021', '住宅購入', '住宅ローン借り換え', '2027-06-01', 30000000, '中', '検討中', NULL, '2024-12-01', '2025-01-08', NULL),
 ('E015', 'C023', '退職', '完全引退・資産整理', '2027-03-31', 0, '低', '検討中', NULL, '2024-09-01', '2024-12-22', NULL),
 ('E016', 'C026', '相続対策', '子供への生前贈与', '2026-12-31', 30000000, '中', '検討中', NULL, '2024-11-01', '2025-01-03', NULL),
 ('E017', 'C029', '事業承継', '老舗茶商の事業継続', '2027-06-30', 50000000, '高', '相談中', NULL, '2024-07-01', '2024-12-15', '後継者候補あり（甥）'),
@@ -728,266 +726,189 @@ USE WAREHOUSE DEMO_WH;
 -- 山田太郎様のポートフォリオ（8億円）- デモの主人公
 INSERT INTO FACT_PORTFOLIO VALUES
 -- 国内株式（4億円）
-('PF001', 'C001', '国内株式', '7203', 'トヨタ自動車', 50000, 1500, '2010-03-15', 2850, 142500000, 67500000, 90.00, '特定口座', 'JPY', '2025-01-15'),
-('PF002', 'C001', '国内株式', '6758', 'ソニーグループ', 20000, 3500, '2012-06-20', 15200, 304000000, 234000000, 334.29, '特定口座', 'JPY', '2025-01-15'),
-('PF003', 'C001', '国内株式', '9433', 'KDDI', 15000, 2800, '2015-04-10', 4650, 69750000, 27750000, 66.07, '特定口座', 'JPY', '2025-01-15'),
+('PF001', 'C001', '国内株式', '7203', 'トヨタ自動車', 50000, 1500, '2010-03-15', 2850, 142500000, 67500000, 90.00, '特定口座', 'JPY', '2026-04-01'),
+('PF002', 'C001', '国内株式', '6758', 'ソニーグループ', 20000, 3500, '2012-06-20', 15200, 304000000, 234000000, 334.29, '特定口座', 'JPY', '2026-04-01'),
+('PF003', 'C001', '国内株式', '9433', 'KDDI', 15000, 2800, '2015-04-10', 4650, 69750000, 27750000, 66.07, '特定口座', 'JPY', '2026-04-01'),
 
 -- 海外株式（1億円）
-('PF004', 'C001', '海外株式', 'AAPL', 'Apple Inc.', 500, 120, '2018-01-15', 185, 13875000, 4875000, 54.17, '特定口座', 'USD', '2025-01-15'),
-('PF005', 'C001', '海外株式', 'MSFT', 'Microsoft Corp.', 300, 250, '2019-05-20', 420, 18900000, 7650000, 68.00, '特定口座', 'USD', '2025-01-15'),
+('PF004', 'C001', '海外株式', 'AAPL', 'Apple Inc.', 500, 120, '2018-01-15', 185, 13875000, 4875000, 54.17, '特定口座', 'USD', '2026-04-01'),
+('PF005', 'C001', '海外株式', 'MSFT', 'Microsoft Corp.', 300, 250, '2019-05-20', 420, 18900000, 7650000, 68.00, '特定口座', 'USD', '2026-04-01'),
 
 -- 国内債券（1.5億円）
-('PF006', 'C001', '国内債券', 'JGB10Y', '日本国債10年', 100, 100, '2020-06-01', 98, 98000000, -2000000, -2.00, '特定口座', 'JPY', '2025-01-15'),
-('PF007', 'C001', '国内債券', 'CPB001', 'プレミアム社債（国内金融）', 50, 100, '2022-03-15', 101, 50500000, 500000, 1.00, '特定口座', 'JPY', '2025-01-15'),
+('PF006', 'C001', '国内債券', 'JGB10Y', '日本国債10年', 100, 100, '2020-06-01', 98, 98000000, -2000000, -2.00, '特定口座', 'JPY', '2026-04-01'),
+('PF007', 'C001', '国内債券', 'CPB001', 'プレミアム社債（国内金融）', 50, 100, '2022-03-15', 101, 50500000, 500000, 1.00, '特定口座', 'JPY', '2026-04-01'),
 
 -- 投資信託（5000万円）
-('PF008', 'C001', '投資信託', 'INF001', '日経225インデックスファンド', 500000, 18000, '2021-01-20', 22000, 11000000, 2000000, 22.22, 'NISA', 'JPY', '2025-01-15'),
-('PF009', 'C001', '投資信託', 'INF002', 'グローバル株式インデックスファンド', 800000, 25000, '2021-06-15', 32000, 25600000, 5600000, 28.00, 'NISA', 'JPY', '2025-01-15'),
-('PF010', 'C001', '投資信託', 'INF003', 'グローバルESG株式ファンド', 400000, 12000, '2023-04-01', 15500, 6200000, 1400000, 29.17, '特定口座', 'JPY', '2025-01-15'),
+('PF008', 'C001', '投資信託', 'INF001', '日経225インデックスファンド', 500000, 18000, '2021-01-20', 22000, 11000000, 2000000, 22.22, 'NISA', 'JPY', '2026-04-01'),
+('PF009', 'C001', '投資信託', 'INF002', 'グローバル株式インデックスファンド', 800000, 25000, '2021-06-15', 32000, 25600000, 5600000, 28.00, 'NISA', 'JPY', '2026-04-01'),
+('PF010', 'C001', '投資信託', 'INF003', 'グローバルESG株式ファンド', 400000, 12000, '2023-04-01', 15500, 6200000, 1400000, 29.17, '特定口座', 'JPY', '2026-04-01'),
 
 -- REIT（5000万円）
-('PF011', 'C001', 'REIT', '8951', '日本ビルファンド投資法人', 100, 580000, '2019-09-10', 650000, 65000000, 7000000, 12.07, '特定口座', 'JPY', '2025-01-15');
+('PF011', 'C001', 'REIT', '8951', '日本ビルファンド投資法人', 100, 580000, '2019-09-10', 650000, 65000000, 7000000, 12.07, '特定口座', 'JPY', '2026-04-01');
 
 -- 鈴木一郎様のポートフォリオ（15億円）- 事業承継案件
 INSERT INTO FACT_PORTFOLIO VALUES
 -- 自社株（10億円）
-('PF012', 'C002', '国内株式', 'SUZUKI', '鈴木商事株式会社（非上場）', 100000, 5000, '1990-04-01', 10000, 1000000000, 500000000, 100.00, '特定口座', 'JPY', '2025-01-15'),
+('PF012', 'C002', '国内株式', 'SUZUKI', '鈴木商事株式会社（非上場）', 100000, 5000, '1990-04-01', 10000, 1000000000, 500000000, 100.00, '特定口座', 'JPY', '2026-04-01'),
 -- 上場株式
-('PF013', 'C002', '国内株式', '8058', '三菱商事', 30000, 2500, '2008-10-15', 3200, 96000000, 21000000, 28.00, '特定口座', 'JPY', '2025-01-15'),
-('PF014', 'C002', '国内株式', '8001', '伊藤忠商事', 25000, 1800, '2010-03-20', 7200, 180000000, 135000000, 300.00, '特定口座', 'JPY', '2025-01-15'),
+('PF013', 'C002', '国内株式', '8058', '三菱商事', 30000, 2500, '2008-10-15', 3200, 96000000, 21000000, 28.00, '特定口座', 'JPY', '2026-04-01'),
+('PF014', 'C002', '国内株式', '8001', '伊藤忠商事', 25000, 1800, '2010-03-20', 7200, 180000000, 135000000, 300.00, '特定口座', 'JPY', '2026-04-01'),
 -- 債券
-('PF015', 'C002', '外国債券', 'UST10Y', '米国債10年', 100, 95, '2022-01-15', 92, 138000000, -4500000, -3.16, '特定口座', 'USD', '2025-01-15'),
+('PF015', 'C002', '外国債券', 'UST10Y', '米国債10年', 100, 95, '2022-01-15', 92, 138000000, -4500000, -3.16, '特定口座', 'USD', '2026-04-01'),
 -- 投資信託
-('PF016', 'C002', '投資信託', 'INF004', 'グローバル半導体株式ファンド', 1000000, 15000, '2023-06-01', 22000, 22000000, 7000000, 46.67, '特定口座', 'JPY', '2025-01-15'),
-('PF017', 'C002', '投資信託', 'INF005', '世界インカム戦略ファンド', 2000000, 10000, '2022-09-15', 11500, 23000000, 3000000, 15.00, '特定口座', 'JPY', '2025-01-15');
+('PF016', 'C002', '投資信託', 'INF004', 'グローバル半導体株式ファンド', 1000000, 15000, '2023-06-01', 22000, 22000000, 7000000, 46.67, '特定口座', 'JPY', '2026-04-01'),
+('PF017', 'C002', '投資信託', 'INF005', '世界インカム戦略ファンド', 2000000, 10000, '2022-09-15', 11500, 23000000, 3000000, 15.00, '特定口座', 'JPY', '2026-04-01');
 
 -- 高橋健一様のポートフォリオ（12億円）- 医療法人理事長
 INSERT INTO FACT_PORTFOLIO VALUES
-('PF018', 'C004', '国内株式', '4568', '第一三共', 20000, 3500, '2018-05-10', 4800, 96000000, 26000000, 37.14, '特定口座', 'JPY', '2025-01-15'),
-('PF019', 'C004', '国内株式', '4519', '中外製薬', 15000, 4000, '2019-02-20', 6200, 93000000, 33000000, 55.00, '特定口座', 'JPY', '2025-01-15'),
-('PF020', 'C004', '海外株式', 'JNJ', 'Johnson & Johnson', 2000, 140, '2020-03-15', 155, 46500000, 4500000, 10.71, '特定口座', 'USD', '2025-01-15'),
-('PF021', 'C004', '海外株式', 'PFE', 'Pfizer Inc.', 5000, 35, '2021-01-10', 28, 21000000, -5250000, -20.00, '特定口座', 'USD', '2025-01-15'),
-('PF022', 'C004', '国内債券', 'JGB5Y', '日本国債5年', 200, 100, '2023-06-01', 99, 198000000, -2000000, -1.00, '特定口座', 'JPY', '2025-01-15'),
-('PF023', 'C004', '投資信託', 'INF006', '先進医療インパクト投資ファンド', 3000000, 12000, '2023-09-01', 14500, 43500000, 7500000, 20.83, 'NISA', 'JPY', '2025-01-15'),
-('PF024', 'C004', 'REIT', '3283', '日本プロロジスリート投資法人', 200, 280000, '2021-07-15', 320000, 64000000, 8000000, 14.29, '特定口座', 'JPY', '2025-01-15'),
-('PF025', 'C004', '預金', 'DEP', 'マネー・リザーブ・ファンド（MRF）', 1, 1, '2024-01-01', 1, 350000000, 0, 0, '特定口座', 'JPY', '2025-01-15');
+('PF018', 'C004', '国内株式', '4568', '第一三共', 20000, 3500, '2018-05-10', 4800, 96000000, 26000000, 37.14, '特定口座', 'JPY', '2026-04-01'),
+('PF019', 'C004', '国内株式', '4519', '中外製薬', 15000, 4000, '2019-02-20', 6200, 93000000, 33000000, 55.00, '特定口座', 'JPY', '2026-04-01'),
+('PF020', 'C004', '海外株式', 'JNJ', 'Johnson & Johnson', 2000, 140, '2020-03-15', 155, 46500000, 4500000, 10.71, '特定口座', 'USD', '2026-04-01'),
+('PF021', 'C004', '海外株式', 'PFE', 'Pfizer Inc.', 5000, 35, '2021-01-10', 28, 21000000, -5250000, -20.00, '特定口座', 'USD', '2026-04-01'),
+('PF022', 'C004', '国内債券', 'JGB5Y', '日本国債5年', 200, 100, '2023-06-01', 99, 198000000, -2000000, -1.00, '特定口座', 'JPY', '2026-04-01'),
+('PF023', 'C004', '投資信託', 'INF006', '先進医療インパクト投資ファンド', 3000000, 12000, '2023-09-01', 14500, 43500000, 7500000, 20.83, 'NISA', 'JPY', '2026-04-01'),
+('PF024', 'C004', 'REIT', '3283', '日本プロロジスリート投資法人', 200, 280000, '2021-07-15', 320000, 64000000, 8000000, 14.29, '特定口座', 'JPY', '2026-04-01'),
+('PF025', 'C004', '預金', 'DEP', 'マネー・リザーブ・ファンド（MRF）', 1, 1, '2024-01-01', 1, 350000000, 0, 0, '特定口座', 'JPY', '2026-04-01');
 
 -- ============================================================================
--- 2. 追加ポートフォリオデータ生成
+-- 2. 追加ポートフォリオデータ（C005-C100）- SQL GENERATOR で一括生成（2026年4月株価）
 -- ============================================================================
-
-CREATE OR REPLACE PROCEDURE GENERATE_PORTFOLIO_DATA()
-RETURNS VARCHAR
-LANGUAGE JAVASCRIPT
-EXECUTE AS CALLER
-AS
-$$
-    var stocks_jp = [
-        {code: '7203', name: 'トヨタ自動車', price: 2850},
-        {code: '6758', name: 'ソニーグループ', price: 15200},
-        {code: '9433', name: 'KDDI', price: 4650},
-        {code: '8058', name: '三菱商事', price: 3200},
-        {code: '8001', name: '伊藤忠商事', price: 7200},
-        {code: '6501', name: '日立製作所', price: 3800},
-        {code: '9984', name: 'ソフトバンクグループ', price: 9500},
-        {code: '4063', name: '信越化学工業', price: 5800},
-        {code: '6902', name: 'デンソー', price: 2400},
-        {code: '7267', name: 'ホンダ', price: 1650}
-    ];
-    
-    var stocks_us = [
-        {code: 'AAPL', name: 'Apple Inc.', price: 185},
-        {code: 'MSFT', name: 'Microsoft Corp.', price: 420},
-        {code: 'GOOGL', name: 'Alphabet Inc.', price: 175},
-        {code: 'AMZN', name: 'Amazon.com Inc.', price: 185},
-        {code: 'NVDA', name: 'NVIDIA Corp.', price: 880}
-    ];
-    
-    var funds = [
-        {code: 'INF001', name: '日経225インデックスファンド', price: 22000},
-        {code: 'INF002', name: 'グローバル株式インデックスファンド', price: 32000},
-        {code: 'INF003', name: 'グローバルESG株式ファンド', price: 15500},
-        {code: 'INF004', name: 'グローバル半導体株式ファンド', price: 22000},
-        {code: 'INF005', name: '世界インカム戦略ファンド', price: 11500}
-    ];
-    
-    var bonds = [
-        {code: 'JGB10Y', name: '日本国債10年', price: 98},
-        {code: 'JGB5Y', name: '日本国債5年', price: 99},
-        {code: 'UST10Y', name: '米国債10年', price: 92}
-    ];
-    
-    var insertCount = 0;
-    var pfId = 26; // PF026から開始
-    
-    // 顧客ID 5から300まで（1-4は既に詳細データあり）
-    for (var customerId = 5; customerId <= 300; customerId++) {
-        // C001, C002, C004はスキップ（既にデータあり）
-        if (customerId === 1 || customerId === 2 || customerId === 4) continue;
-        
-        var cid = 'C' + String(customerId).padStart(3, '0');
-        
-        // 各顧客に3-8銘柄
-        var numHoldings = Math.floor(Math.random() * 6) + 3;
-        var usedCodes = [];
-        
-        for (var j = 0; j < numHoldings; j++) {
-            var pid = 'PF' + String(pfId).padStart(4, '0');
-            var assetClass, security, currency;
-            var rand = Math.random();
-            
-            if (rand < 0.4) {
-                // 国内株式
-                security = stocks_jp[Math.floor(Math.random() * stocks_jp.length)];
-                assetClass = '国内株式';
-                currency = 'JPY';
-            } else if (rand < 0.55) {
-                // 海外株式
-                security = stocks_us[Math.floor(Math.random() * stocks_us.length)];
-                assetClass = '海外株式';
-                currency = 'USD';
-            } else if (rand < 0.75) {
-                // 投資信託
-                security = funds[Math.floor(Math.random() * funds.length)];
-                assetClass = '投資信託';
-                currency = 'JPY';
-            } else {
-                // 債券
-                security = bonds[Math.floor(Math.random() * bonds.length)];
-                assetClass = currency === 'USD' ? '外国債券' : '国内債券';
-                currency = security.code.startsWith('US') ? 'USD' : 'JPY';
-            }
-            
-            // 重複チェック
-            if (usedCodes.includes(security.code)) continue;
-            usedCodes.push(security.code);
-            
-            var quantity = Math.floor(Math.random() * 10000) + 100;
-            var acqPrice = security.price * (0.6 + Math.random() * 0.6);
-            var curPrice = security.price;
-            var marketValue = Math.floor(quantity * curPrice);
-            var unrealizedGain = Math.floor(marketValue - (quantity * acqPrice));
-            var gainPct = Math.round((curPrice / acqPrice - 1) * 10000) / 100;
-            var accountType = Math.random() > 0.7 ? 'NISA' : '特定口座';
-            
-            var sql = `INSERT INTO FACT_PORTFOLIO (
-                PORTFOLIO_ID, CUSTOMER_ID, ASSET_CLASS, SECURITY_CODE, SECURITY_NAME,
-                QUANTITY, ACQUISITION_PRICE, CURRENT_PRICE, MARKET_VALUE, 
-                UNREALIZED_GAIN, UNREALIZED_GAIN_PCT, ACCOUNT_TYPE, CURRENCY, AS_OF_DATE
-            ) VALUES (
-                '${pid}', '${cid}', '${assetClass}', '${security.code}', '${security.name}',
-                ${quantity}, ${Math.round(acqPrice)}, ${curPrice}, ${marketValue},
-                ${unrealizedGain}, ${gainPct}, '${accountType}', '${currency}', '2025-01-15'
-            )`;
-            
-            try {
-                snowflake.execute({sqlText: sql});
-                insertCount++;
-                pfId++;
-            } catch (err) {
-                // Skip errors
-            }
-        }
-    }
-    
-    return 'Generated ' + insertCount + ' portfolio records';
-$$;
-
-CALL GENERATE_PORTFOLIO_DATA();
+INSERT INTO FACT_PORTFOLIO (
+    PORTFOLIO_ID, CUSTOMER_ID, ASSET_CLASS, SECURITY_CODE, SECURITY_NAME,
+    QUANTITY, ACQUISITION_PRICE, ACQUISITION_DATE, CURRENT_PRICE,
+    MARKET_VALUE, UNREALIZED_GAIN, UNREALIZED_GAIN_PCT,
+    ACCOUNT_TYPE, CURRENCY, AS_OF_DATE
+)
+WITH g AS (
+    SELECT
+        ROW_NUMBER() OVER (ORDER BY SEQ4()) AS rn,
+        UNIFORM(5, 100, RANDOM())   AS cust_num,
+        MOD(UNIFORM(0, 999, RANDOM()), 17) AS sec_idx,
+        UNIFORM(100, 5000, RANDOM()) AS qty,
+        UNIFORM(-25, 45, RANDOM())  AS gain_pct
+    FROM TABLE(GENERATOR(ROWCOUNT => 350))
+), with_sec AS (
+    SELECT
+        g.rn,
+        'C' || LPAD(CAST(g.cust_num AS VARCHAR), 3, '0') AS customer_id,
+        CASE g.sec_idx
+            WHEN 0 THEN '国内株式' WHEN 1 THEN '国内株式' WHEN 2 THEN '国内株式'
+            WHEN 3 THEN '国内株式' WHEN 4 THEN '国内株式' WHEN 5 THEN '国内株式'
+            WHEN 6 THEN '国内株式' WHEN 7 THEN '海外株式' WHEN 8 THEN '海外株式'
+            WHEN 9 THEN '海外株式' WHEN 10 THEN '海外株式' WHEN 11 THEN '投資信託'
+            WHEN 12 THEN '投資信託' WHEN 13 THEN '投資信託' WHEN 14 THEN '投資信託'
+            WHEN 15 THEN '債券'     ELSE '債券'
+        END AS asset_class,
+        CASE g.sec_idx
+            WHEN 0 THEN '7203'   WHEN 1 THEN '6758'   WHEN 2 THEN '9433'
+            WHEN 3 THEN '8058'   WHEN 4 THEN '8001'   WHEN 5 THEN '6501'   WHEN 6 THEN '9984'
+            WHEN 7 THEN 'AAPL'   WHEN 8 THEN 'MSFT'   WHEN 9 THEN 'NVDA'   WHEN 10 THEN 'AMZN'
+            WHEN 11 THEN 'INF001' WHEN 12 THEN 'INF002' WHEN 13 THEN 'INF003' WHEN 14 THEN 'INF005'
+            WHEN 15 THEN 'JGB10Y' ELSE 'UST10Y'
+        END AS sec_code,
+        CASE g.sec_idx
+            WHEN 0 THEN 'トヨタ自動車'              WHEN 1 THEN 'ソニーグループ'
+            WHEN 2 THEN 'KDDI'                      WHEN 3 THEN '三菱商事'
+            WHEN 4 THEN '伊藤忠商事'                WHEN 5 THEN '日立製作所'
+            WHEN 6 THEN 'ソフトバンクグループ'      WHEN 7 THEN 'Apple Inc.'
+            WHEN 8 THEN 'Microsoft Corp.'           WHEN 9 THEN 'NVIDIA Corp.'
+            WHEN 10 THEN 'Amazon.com Inc.'          WHEN 11 THEN '日経225インデックスファンド'
+            WHEN 12 THEN 'グローバル株式インデックスファンド'
+            WHEN 13 THEN 'グローバルESG株式ファンド'
+            WHEN 14 THEN '世界インカム戦略ファンド' WHEN 15 THEN '日本国債10年'
+            ELSE '米国債10年'
+        END AS sec_name,
+        CASE g.sec_idx
+            WHEN 0  THEN  3200  WHEN 1  THEN 17500  WHEN 2  THEN  5200
+            WHEN 3  THEN  3800  WHEN 4  THEN  8200  WHEN 5  THEN  4500  WHEN 6  THEN 10200
+            WHEN 7  THEN   220  WHEN 8  THEN   480  WHEN 9  THEN  1200  WHEN 10 THEN   210
+            WHEN 11 THEN 24500  WHEN 12 THEN 36000  WHEN 13 THEN 17200  WHEN 14 THEN 12800
+            WHEN 15 THEN    99  ELSE 95
+        END AS cur_price,
+        CASE WHEN g.sec_idx IN (7,8,9,10,16) THEN 'USD' ELSE 'JPY' END AS currency,
+        g.qty,
+        g.gain_pct
+    FROM g
+)
+SELECT
+    'PF' || LPAD(CAST(rn + 25 AS VARCHAR), 4, '0'),
+    customer_id,
+    asset_class, sec_code, sec_name,
+    CAST(qty AS DECIMAL(18,4)),
+    CAST(cur_price / (1.0 + gain_pct / 100.0) AS DECIMAL(18,4)),
+    DATEADD('day', -UNIFORM(30, 730, RANDOM()), CURRENT_DATE()),
+    CAST(cur_price AS DECIMAL(18,4)),
+    CAST(qty * cur_price AS BIGINT),
+    CAST(qty * cur_price * gain_pct / (100.0 + gain_pct) AS BIGINT),
+    ROUND(gain_pct, 2),
+    CASE WHEN UNIFORM(0, 9, RANDOM()) > 7 THEN 'NISA' ELSE '特定口座' END,
+    currency,
+    CURRENT_DATE()
+FROM with_sec;
 
 -- ============================================================================
--- 3. 取引データ（500件）
+-- 3. 取引データ（150件）- SQL GENERATOR で一括生成
 -- ============================================================================
-
--- 山田太郎様の2025年取引（デモ用）
-INSERT INTO FACT_TRANSACTION VALUES
-('T001', 'C001', '2025-01-10', '2025-01-14', '買付', '投資信託', 'INF002', 'グローバル株式インデックスファンド', 100000, 32000, 3200000, 0, 0, 3200000, 'NISA', 'オンライン', 'RM001', '定期積立'),
-('T002', 'C001', '2024-12-15', '2024-12-19', '売却', '国内株式', '9433', 'KDDI', 1000, 4600, 4600000, 4600, 92000, 4503400, '特定口座', '対面', 'RM001', '配当再投資のため'),
-('T003', 'C001', '2024-11-20', '2024-11-22', '買付', '国内株式', '6758', 'ソニーグループ', 500, 15000, 7500000, 7500, 0, 7507500, '特定口座', '対面', 'RM001', NULL),
-('T004', 'C001', '2024-10-05', '2024-10-09', '配当', '国内株式', '7203', 'トヨタ自動車', 50000, NULL, 250000, 0, 50000, 200000, '特定口座', 'システム', NULL, '中間配当'),
-('T005', 'C001', '2024-09-15', '2024-09-19', '買付', '投資信託', 'INF003', 'グローバルESG株式ファンド', 200000, 15000, 3000000, 0, 0, 3000000, '特定口座', 'オンライン', 'RM001', NULL),
-('T006', 'C001', '2024-08-01', '2024-08-05', '買付', 'REIT', '8951', '日本ビルファンド投資法人', 10, 640000, 6400000, 6400, 0, 6406400, '特定口座', '対面', 'RM001', 'REIT追加'),
-('T007', 'C001', '2024-07-10', '2024-07-12', '売却', '海外株式', 'AAPL', 'Apple Inc.', 100, 180, 2700000, 2700, 162000, 2535300, '特定口座', 'オンライン', NULL, '利益確定'),
-('T008', 'C001', '2024-06-20', '2024-06-24', '買付', '国内債券', 'JGB10Y', '日本国債10年', 50, 99, 4950000, 0, 0, 4950000, '特定口座', '対面', 'RM001', NULL),
-('T009', 'C001', '2024-05-15', '2024-05-17', '入金', NULL, NULL, NULL, NULL, NULL, 50000000, 0, 0, 50000000, '特定口座', '振込', NULL, '退職金入金'),
-('T010', 'C001', '2024-04-01', '2024-04-03', '買付', '投資信託', 'INF001', '日経225インデックスファンド', 300000, 21000, 6300000, 0, 0, 6300000, 'NISA', 'オンライン', 'RM001', '新NISA枠活用');
-
--- 追加の取引データ生成
-CREATE OR REPLACE PROCEDURE GENERATE_TRANSACTION_DATA()
-RETURNS VARCHAR
-LANGUAGE JAVASCRIPT
-EXECUTE AS CALLER
-AS
-$$
-    var txnTypes = ['買付', '売却', '配当', '入金', '出金'];
-    var channels = ['対面', 'オンライン', '電話', 'システム'];
-    
-    var securities = [
-        {class: '国内株式', code: '7203', name: 'トヨタ自動車'},
-        {class: '国内株式', code: '6758', name: 'ソニーグループ'},
-        {class: '国内株式', code: '9433', name: 'KDDI'},
-        {class: '国内株式', code: '8058', name: '三菱商事'},
-        {class: '海外株式', code: 'AAPL', name: 'Apple Inc.'},
-        {class: '海外株式', code: 'MSFT', name: 'Microsoft Corp.'},
-        {class: '投資信託', code: 'INF001', name: '日経225インデックスファンド'},
-        {class: '投資信託', code: 'INF002', name: 'グローバル株式インデックスファンド'},
-        {class: '投資信託', code: 'INF005', name: '世界インカム戦略ファンド'}
-    ];
-    
-    var insertCount = 0;
-    var txnId = 11; // T011から開始
-    
-    // 490件生成（10件は既に入力済み）
-    for (var i = 0; i < 490; i++) {
-        var tid = 'T' + String(txnId).padStart(4, '0');
-        var customerId = Math.floor(Math.random() * 300) + 1;
-        var cid = 'C' + String(customerId).padStart(3, '0');
-        
-        // 2024年1月〜2025年1月の日付
-        var year = Math.random() > 0.1 ? 2024 : 2025;
-        var month = year === 2025 ? Math.floor(Math.random() * 1) + 1 : Math.floor(Math.random() * 12) + 1;
-        var day = Math.floor(Math.random() * 28) + 1;
-        var txnDate = year + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0');
-        
-        var txnType = txnTypes[Math.floor(Math.random() * 3)]; // 買付/売却/配当が多い
-        var channel = channels[Math.floor(Math.random() * channels.length)];
-        var security = securities[Math.floor(Math.random() * securities.length)];
-        
-        var quantity = Math.floor(Math.random() * 5000) + 100;
-        var price = Math.floor(Math.random() * 50000) + 1000;
-        var amount = quantity * price;
-        if (amount > 100000000) amount = Math.floor(Math.random() * 50000000) + 1000000;
-        
-        var fee = Math.floor(amount * 0.001);
-        var tax = txnType === '売却' ? Math.floor(amount * 0.02) : 0;
-        var netAmount = txnType === '売却' ? amount - fee - tax : amount + fee;
-        
-        var accountType = Math.random() > 0.7 ? 'NISA' : '特定口座';
-        var rmId = 'RM' + String(Math.floor(Math.random() * 12) + 1).padStart(3, '0');
-        
-        var sql = `INSERT INTO FACT_TRANSACTION (
-            TRANSACTION_ID, CUSTOMER_ID, TRANSACTION_DATE, TRANSACTION_TYPE,
-            ASSET_CLASS, SECURITY_CODE, SECURITY_NAME, QUANTITY, PRICE, AMOUNT,
-            FEE, TAX, NET_AMOUNT, ACCOUNT_TYPE, ORDER_CHANNEL, RM_ID
-        ) VALUES (
-            '${tid}', '${cid}', '${txnDate}', '${txnType}',
-            '${security.class}', '${security.code}', '${security.name}', ${quantity}, ${price}, ${amount},
-            ${fee}, ${tax}, ${netAmount}, '${accountType}', '${channel}', '${rmId}'
-        )`;
-        
-        try {
-            snowflake.execute({sqlText: sql});
-            insertCount++;
-            txnId++;
-        } catch (err) {
-            // Skip errors
-        }
-    }
-    
-    return 'Generated ' + insertCount + ' transaction records';
-$$;
-
-CALL GENERATE_TRANSACTION_DATA();
+INSERT INTO FACT_TRANSACTION (
+    TRANSACTION_ID, CUSTOMER_ID, TRANSACTION_DATE, TRANSACTION_TYPE,
+    ASSET_CLASS, SECURITY_CODE, SECURITY_NAME,
+    QUANTITY, PRICE, AMOUNT, FEE, TAX, NET_AMOUNT,
+    ACCOUNT_TYPE, ORDER_CHANNEL, RM_ID
+)
+WITH g AS (
+    SELECT
+        ROW_NUMBER() OVER (ORDER BY SEQ4()) AS rn,
+        UNIFORM(1, 100, RANDOM())  AS cust_num,
+        UNIFORM(0,  8,  RANDOM())  AS sec_idx,
+        UNIFORM(0,  2,  RANDOM())  AS type_idx,
+        UNIFORM(0,  3,  RANDOM())  AS ch_idx,
+        UNIFORM(100, 3000, RANDOM()) AS qty,
+        UNIFORM(1000, 50000, RANDOM()) AS price,
+        UNIFORM(0, 99, RANDOM())   AS nisa_rnd,
+        UNIFORM(1, 12, RANDOM())   AS rm_num,
+        DATEADD('day', -UNIFORM(0, 450, RANDOM()), CURRENT_DATE()) AS txn_date
+    FROM TABLE(GENERATOR(ROWCOUNT => 150))
+), calcd AS (
+    SELECT
+        g.*,
+        CASE type_idx WHEN 0 THEN '買付' WHEN 1 THEN '売却' ELSE '配当' END AS txn_type,
+        CAST(qty * price AS BIGINT) AS amount_raw
+    FROM g
+)
+SELECT
+    'T' || LPAD(CAST(rn + 10 AS VARCHAR), 4, '0'),
+    'C' || LPAD(CAST(cust_num AS VARCHAR), 3, '0'),
+    txn_date,
+    txn_type,
+    CASE sec_idx
+        WHEN 0 THEN '国内株式' WHEN 1 THEN '国内株式' WHEN 2 THEN '国内株式'
+        WHEN 3 THEN '国内株式' WHEN 4 THEN '海外株式' WHEN 5 THEN '海外株式'
+        ELSE '投資信託'
+    END,
+    CASE sec_idx
+        WHEN 0 THEN '7203' WHEN 1 THEN '6758' WHEN 2 THEN '9433' WHEN 3 THEN '8058'
+        WHEN 4 THEN 'AAPL' WHEN 5 THEN 'MSFT'
+        WHEN 6 THEN 'INF001' WHEN 7 THEN 'INF002' ELSE 'INF005'
+    END,
+    CASE sec_idx
+        WHEN 0 THEN 'トヨタ自動車' WHEN 1 THEN 'ソニーグループ'
+        WHEN 2 THEN 'KDDI'         WHEN 3 THEN '三菱商事'
+        WHEN 4 THEN 'Apple Inc.'   WHEN 5 THEN 'Microsoft Corp.'
+        WHEN 6 THEN '日経225インデックスファンド'
+        WHEN 7 THEN 'グローバル株式インデックスファンド' ELSE '世界インカム戦略ファンド'
+    END,
+    qty, price,
+    LEAST(amount_raw, 100000000),
+    CAST(LEAST(amount_raw, 100000000) * 0.001 AS BIGINT),
+    CASE WHEN txn_type = '売却' THEN CAST(LEAST(amount_raw, 100000000) * 0.02 AS BIGINT) ELSE 0 END,
+    CASE WHEN txn_type = '売却'
+         THEN CAST(LEAST(amount_raw, 100000000) * (1 - 0.001 - 0.02) AS BIGINT)
+         ELSE CAST(LEAST(amount_raw, 100000000) * 1.001 AS BIGINT)
+    END,
+    CASE WHEN nisa_rnd > 70 THEN 'NISA' ELSE '特定口座' END,
+    CASE ch_idx WHEN 0 THEN '対面' WHEN 1 THEN 'オンライン' WHEN 2 THEN '電話' ELSE 'システム' END,
+    'RM' || LPAD(CAST(rm_num AS VARCHAR), 3, '0')
+FROM calcd;
 
 SELECT 'Part 3: Portfolio & Transaction data completed successfully!' AS STATUS;
 
@@ -1125,67 +1046,67 @@ INSERT INTO DIM_PRODUCT_RECOMMENDATION VALUES
 
 INSERT INTO NEWS_ARTICLES VALUES
 -- トヨタ関連（デモで重要）
-('N001', '2025-01-15', '2025-01-15 09:30:00', '社内リサーチ', '市況', 
+('N001', '2026-03-15', '2026-03-15 09:30:00', '社内リサーチ', '市況', 
  'トヨタ自動車、来期業績上方修正の可能性 - アナリストレポート',
  'トヨタ自動車(7203)について、アナリストチームは来期の業績上方修正の可能性を指摘した。北米市場でのハイブリッド車販売が好調で、為替も円安基調が継続していることから、営業利益は当初予想を10-15%上回る可能性があるとしている。投資判断は「買い」を維持し、目標株価を3,200円から3,500円に引き上げた。',
  'トヨタ自動車の業績見通しについて分析。ハイブリッド車販売好調と円安効果で来期上方修正の可能性。',
  '7203,トヨタ,TOYOTA', 'ポジティブ', 5, '自動車,製造業,業績予想'),
 
-('N002', '2025-01-14', '2025-01-14 15:00:00', '日本経済新聞', '市況',
+('N002', '2026-03-14', '2026-03-14 15:00:00', '日本経済新聞', '市況',
  'トヨタ、EV新モデル発表で株価上昇 年初来高値更新',
  'トヨタ自動車は14日、次世代電気自動車(EV)の新モデルを発表した。全固体電池を搭載し、航続距離1,000kmを実現。2026年に量産開始予定。この発表を受け、トヨタ株は前日比3.2%高の2,890円まで上昇し、年初来高値を更新した。',
  'トヨタが次世代EV発表。全固体電池搭載で航続距離1,000km。株価上昇。',
  '7203,トヨタ,EV', 'ポジティブ', 5, '自動車,EV,電池'),
 
 -- 税制改正関連（デモで重要）
-('N003', '2025-01-10', '2025-01-10 10:00:00', '財務省', '税制',
+('N003', '2026-03-10', '2026-03-10 10:00:00', '財務省', '税制',
  '【速報】教育資金贈与信託、2026年3月末で制度終了へ - 政府税調',
  '政府税制調査会は10日、教育資金の一括贈与に係る非課税措置（教育資金贈与信託）について、2026年3月31日をもって制度を終了する方針を固めた。現行制度では30歳未満の子や孫への教育資金として1,500万円まで非課税で贈与できるが、制度終了後は通常の贈与税が適用される。対象者は早期の対応が求められる。',
  '教育資金贈与信託の非課税措置が2026年3月末で終了へ。早期対応が必要。',
  NULL, 'ニュートラル', 3, '税制改正,贈与税,相続,教育資金'),
 
-('N004', '2025-01-08', '2025-01-08 14:30:00', '国税庁', '税制',
+('N004', '2026-03-08', '2026-03-08 14:30:00', '国税庁', '税制',
  '2025年度税制改正大綱のポイント - 相続税・贈与税関連',
  '国税庁は2025年度税制改正大綱のポイントを公表した。相続税関連では、相続時精算課税制度の基礎控除が年間110万円に設定され、暦年贈与との選択が可能に。また、事業承継税制の特例措置は2027年まで延長される。富裕層にとっては生前贈与戦略の見直しが必要になる可能性がある。',
  '2025年度税制改正大綱発表。相続時精算課税制度の基礎控除設定、事業承継税制延長など。',
  NULL, 'ニュートラル', 3, '税制改正,相続税,贈与税,事業承継'),
 
 -- 市場動向
-('N005', '2025-01-15', '2025-01-15 16:00:00', '東京証券取引所', '市況',
+('N005', '2026-03-15', '2026-03-15 16:00:00', '東京証券取引所', '市況',
  '日経平均、4万円台を回復 半導体関連株が牽引',
  '15日の東京株式市場で日経平均株価は前日比485円高の40,125円となり、約2ヶ月ぶりに4万円台を回復した。米国のAI関連投資拡大期待から半導体関連株が買われ、相場全体を押し上げた。東京エレクトロン、アドバンテストなどが上昇。',
  '日経平均4万円台回復。半導体関連株が牽引。',
  '8035,6857,日経平均', 'ポジティブ', 3, '日経平均,半導体,AI'),
 
-('N006', '2025-01-13', '2025-01-13 18:00:00', 'Bloomberg', '為替',
+('N006', '2026-03-13', '2026-03-13 18:00:00', 'Bloomberg', '為替',
  'ドル円、156円台に上昇 日米金利差拡大観測で',
  '外国為替市場でドル円相場は156.50円まで上昇し、約3週間ぶりの円安水準となった。米国のインフレ指標が予想を上回り、FRBの利下げペース鈍化観測が強まったことが背景。日銀は現行の金融政策を維持する見通しで、日米金利差の拡大が円安を後押ししている。',
  'ドル円156円台に上昇。日米金利差拡大で円安進行。',
  'USD/JPY', 'ニュートラル', 3, '為替,ドル円,金利'),
 
 -- ソニー関連
-('N007', '2025-01-12', '2025-01-12 11:00:00', '社内リサーチ', '市況',
+('N007', '2026-03-12', '2026-03-12 11:00:00', '社内リサーチ', '市況',
  'ソニーグループ、ゲーム・音楽事業好調で目標株価引き上げ',
  'ソニーグループ(6758)について、リサーチチームはゲーム事業（PS5販売好調）と音楽事業（ストリーミング収入増）の好調を評価し、目標株価を16,000円から17,500円に引き上げた。投資判断は「買い」を継続。映画事業もスパイダーマン新作のヒットで貢献が期待される。',
  'ソニー目標株価引き上げ。ゲーム・音楽好調。',
  '6758,ソニー,SONY', 'ポジティブ', 3, 'エンターテインメント,ゲーム,音楽'),
 
 -- 金融関連
-('N008', '2025-01-11', '2025-01-11 09:00:00', '日本銀行', '金融政策',
+('N008', '2026-03-11', '2026-03-11 09:00:00', '日本銀行', '金融政策',
  '日銀、金融政策決定会合で現状維持を決定',
  '日本銀行は11日の金融政策決定会合で、短期金利の誘導目標を0-0.1%程度に据え置くことを決定した。植田総裁は記者会見で「物価上昇率は2%目標に向けて緩やかに上昇している」と述べ、今後の経済・物価動向を見極める姿勢を示した。',
  '日銀、金融政策現状維持。利上げは慎重姿勢継続。',
  NULL, 'ニュートラル', 3, '金融政策,日銀,金利'),
 
 -- 不動産関連
-('N009', '2025-01-09', '2025-01-09 14:00:00', '不動産経済研究所', '不動産',
+('N009', '2026-03-09', '2026-03-09 14:00:00', '不動産経済研究所', '不動産',
  '首都圏マンション価格、過去最高を更新 - 2024年実績',
  '不動産経済研究所の発表によると、2024年の首都圏新築マンション平均価格は8,950万円となり、過去最高を更新した。都心部の用地取得難と建設コスト上昇が背景。投資用マンション市場も堅調で、利回りは4-5%台を維持している。',
  '首都圏マンション価格過去最高。投資市場も堅調。',
  '8951,3283', 'ポジティブ', 3, '不動産,マンション,REIT'),
 
 -- 相続関連
-('N010', '2025-01-07', '2025-01-07 10:30:00', '国税庁', '税制',
+('N010', '2026-03-07', '2026-03-07 10:30:00', '国税庁', '税制',
  '2024年相続税申告件数、過去最多を更新 - 国税庁発表',
  '国税庁は2024年の相続税申告件数が約18万件となり、過去最多を更新したと発表した。高齢化の進展と資産価格の上昇が背景。課税価格の総額は約25兆円で、1件あたりの平均は約1.4億円。相続対策への関心が一段と高まっている。',
  '相続税申告件数過去最多。相続対策への関心高まる。',
@@ -1193,49 +1114,49 @@ INSERT INTO NEWS_ARTICLES VALUES
 
 -- 追加のニュース（40件）
 INSERT INTO NEWS_ARTICLES VALUES
-('N011', '2025-01-06', '2025-01-06 09:00:00', 'Reuters', '市況', 'KDDI、5G投資拡大で中期成長見通し引き上げ', 'KDDIは5G関連投資を加速し、2027年度までの中期成長率見通しを引き上げた。法人向けDXサービスも好調で、営業利益率の改善が続く見込み。', 'KDDI中期見通し引き上げ', '9433,KDDI', 'ポジティブ', 3, '通信,5G,DX'),
-('N012', '2025-01-05', '2025-01-05 15:00:00', '社内リサーチ', '市況', '三菱商事、資源高で業績好調 - 投資判断「買い」維持', '三菱商事は資源価格の高止まりと非資源分野の成長で業績好調が続く見通し。配当利回りも4%台と魅力的。', '三菱商事業績好調', '8058,三菱商事', 'ポジティブ', 3, '商社,資源,配当'),
-('N013', '2025-01-04', '2025-01-04 11:00:00', '日本経済新聞', '市況', '伊藤忠商事、非資源ビジネス拡大で最高益更新へ', '伊藤忠商事は食料・繊維などの非資源分野が好調で、2024年度は純利益の最高益更新が視野に入った。', '伊藤忠最高益へ', '8001,伊藤忠', 'ポジティブ', 3, '商社,非資源'),
-('N014', '2025-01-03', '2025-01-03 10:00:00', 'Bloomberg', '為替', '2025年為替見通し：ドル円は150-160円のレンジか', '主要金融機関の2025年為替見通しでは、ドル円は150-160円のレンジで推移するとの予想が多い。日米金利差と日本の経常収支動向が焦点。', '2025年為替見通し', 'USD/JPY', 'ニュートラル', 3, '為替,見通し'),
-('N015', '2025-01-02', '2025-01-02 09:00:00', '東京証券取引所', '市況', '2025年大発会、日経平均は小幅上昇でスタート', '2025年最初の取引となった大発会で、日経平均株価は小幅上昇。海外投資家の買いが入り、年初から堅調なスタートとなった。', '大発会小幅上昇', NULL, 'ポジティブ', 1, '日経平均,大発会'),
-('N016', '2024-12-28', '2024-12-28 16:00:00', '社内リサーチ', '市況', '【年末特集】2025年注目セクター - 半導体・AI関連', 'リサーチチームは2025年の注目セクターとして半導体・AI関連を挙げた。生成AI需要の拡大でNVIDIA、東京エレクトロンなどに注目。', '2025年注目セクター', '8035,NVDA', 'ポジティブ', 3, '半導体,AI,2025年展望'),
-('N017', '2024-12-27', '2024-12-27 14:00:00', '財務省', '税制', '相続税の税務調査強化へ - 海外資産の把握を重点化', '財務省は2025年度から相続税の税務調査を強化する方針。特に海外資産の把握を重点化し、富裕層の申告漏れ対策を進める。', '相続税調査強化', NULL, 'ニュートラル', 3, '相続税,税務調査'),
-('N018', '2024-12-26', '2024-12-26 10:00:00', '日本経済新聞', '不動産', '都心オフィス空室率、2%台に低下 - 企業の出社回帰で', '都心5区のオフィス空室率が2%台に低下。コロナ後の出社回帰とAI・DX関連企業の拡大で需要が回復している。', '都心オフィス空室率低下', NULL, 'ポジティブ', 3, '不動産,オフィス'),
-('N019', '2024-12-25', '2024-12-25 09:00:00', '内閣府', '経済', 'GDP成長率、2025年は2.0%程度の見通し - 内閣府', '内閣府は2025年度の実質GDP成長率を2.0%程度と予測。インバウンド需要と設備投資の回復が牽引役となる見込み。', 'GDP見通し', NULL, 'ポジティブ', 1, 'GDP,経済成長'),
-('N020', '2024-12-24', '2024-12-24 15:00:00', '社内リサーチ', '市況', '日立製作所、DX需要で業績好調 - 目標株価引き上げ', '日立製作所はDXソリューション事業が好調で業績を牽引。リサーチチームは目標株価を4,200円に引き上げ、投資判断「買い」を維持。', '日立目標株価引き上げ', '6501,日立', 'ポジティブ', 3, 'DX,IT'),
-('N021', '2024-12-23', '2024-12-23 11:00:00', 'Reuters', '市況', 'ソフトバンクG、AI投資加速で注目高まる', 'ソフトバンクグループはAI分野への投資を加速。Armの業績好調と相まって、株価上昇期待が高まっている。', 'ソフトバンクG AI投資', '9984,SBG', 'ポジティブ', 3, 'AI,投資'),
-('N022', '2024-12-22', '2024-12-22 10:00:00', '日本経済新聞', '自動車', 'ホンダ、次世代EV開発に1兆円投資を発表', 'ホンダは2030年までに次世代EV開発に1兆円を投資すると発表。全固体電池の量産化とソフトウェア開発を加速する。', 'ホンダEV投資', '7267,ホンダ', 'ポジティブ', 3, 'EV,自動車'),
-('N023', '2024-12-21', '2024-12-21 14:00:00', '社内リサーチ', '市況', 'デンソー、EV関連部品好調で業績上振れ', 'デンソーはEV関連部品の需要増で業績が上振れ。特に熱マネジメント製品が好調で、営業利益率の改善が続く。', 'デンソー業績上振れ', '6902,デンソー', 'ポジティブ', 3, 'EV,自動車部品'),
-('N024', '2024-12-20', '2024-12-20 09:00:00', 'Bloomberg', '金融', '米FRB、利下げペース鈍化を示唆 - 12月FOMC', '米FRBは12月のFOMCで政策金利を0.25%引き下げたが、来年の利下げペース鈍化を示唆。ドル高・円安圧力が継続する見通し。', 'FRB利下げ鈍化', NULL, 'ニュートラル', 3, '金融政策,FRB,金利'),
-('N025', '2024-12-19', '2024-12-19 15:00:00', '国税庁', '税制', '暦年贈与と相続時精算課税の選択、どちらが有利か - 解説', '2024年税制改正で変更された贈与税制について国税庁が解説資料を公表。暦年贈与と相続時精算課税の選択基準を具体例で示した。', '贈与税制解説', NULL, 'ニュートラル', 3, '贈与税,税制'),
-('N026', '2024-12-18', '2024-12-18 11:00:00', '社内リサーチ', '市況', '信越化学、半導体シリコンウェハー需要回復で上方修正期待', '信越化学工業は半導体シリコンウェハーの需要回復で業績上方修正が期待される。投資判断「買い」、目標株価6,500円。', '信越化学上方修正期待', '4063,信越化学', 'ポジティブ', 3, '半導体,素材'),
-('N027', '2024-12-17', '2024-12-17 10:00:00', '日本経済新聞', '医薬', '第一三共、がん治療薬が米国で好調 - グローバル展開加速', '第一三共の抗がん剤「エンハーツ」が米国市場で売上好調。パートナーのアストラゼネカとの協業でグローバル展開を加速。', '第一三共がん治療薬好調', '4568,第一三共', 'ポジティブ', 3, '医薬品,がん治療'),
-('N028', '2024-12-16', '2024-12-16 14:00:00', '社内リサーチ', '市況', '中外製薬、ロシュとの提携強化で成長加速', '中外製薬は親会社ロシュとの提携を強化し、新薬開発パイプラインを拡充。中長期的な成長が期待される。', '中外製薬成長加速', '4519,中外製薬', 'ポジティブ', 3, '医薬品'),
-('N029', '2024-12-15', '2024-12-15 09:00:00', 'Reuters', '不動産', 'Jリート指数、年初来高値更新 - 金利安定で買い安心感', 'Jリート指数が年初来高値を更新。日銀の金利据え置きで金利上昇懸念が後退し、高配当利回りのJリートに買いが入った。', 'Jリート高値更新', '8951,3283', 'ポジティブ', 3, 'REIT,不動産'),
-('N030', '2024-12-14', '2024-12-14 16:00:00', '東京証券取引所', '市況', '週間売買代金、過去最高を更新 - 海外マネー流入', '東京証券取引所の週間売買代金が過去最高を更新。海外投資家の日本株買いが活発化し、市場の流動性が向上している。', '売買代金最高', NULL, 'ポジティブ', 3, '株式市場,売買代金');
+('N011', '2026-03-06', '2026-03-06 09:00:00', 'Reuters', '市況', 'KDDI、5G投資拡大で中期成長見通し引き上げ', 'KDDIは5G関連投資を加速し、2027年度までの中期成長率見通しを引き上げた。法人向けDXサービスも好調で、営業利益率の改善が続く見込み。', 'KDDI中期見通し引き上げ', '9433,KDDI', 'ポジティブ', 3, '通信,5G,DX'),
+('N012', '2026-03-05', '2026-03-05 15:00:00', '社内リサーチ', '市況', '三菱商事、資源高で業績好調 - 投資判断「買い」維持', '三菱商事は資源価格の高止まりと非資源分野の成長で業績好調が続く見通し。配当利回りも4%台と魅力的。', '三菱商事業績好調', '8058,三菱商事', 'ポジティブ', 3, '商社,資源,配当'),
+('N013', '2026-03-04', '2026-03-04 11:00:00', '日本経済新聞', '市況', '伊藤忠商事、非資源ビジネス拡大で最高益更新へ', '伊藤忠商事は食料・繊維などの非資源分野が好調で、2024年度は純利益の最高益更新が視野に入った。', '伊藤忠最高益へ', '8001,伊藤忠', 'ポジティブ', 3, '商社,非資源'),
+('N014', '2026-03-03', '2026-03-03 10:00:00', 'Bloomberg', '為替', '2025年為替見通し：ドル円は150-160円のレンジか', '主要金融機関の2025年為替見通しでは、ドル円は150-160円のレンジで推移するとの予想が多い。日米金利差と日本の経常収支動向が焦点。', '2025年為替見通し', 'USD/JPY', 'ニュートラル', 3, '為替,見通し'),
+('N015', '2026-03-02', '2026-03-02 09:00:00', '東京証券取引所', '市況', '2025年大発会、日経平均は小幅上昇でスタート', '2025年最初の取引となった大発会で、日経平均株価は小幅上昇。海外投資家の買いが入り、年初から堅調なスタートとなった。', '大発会小幅上昇', NULL, 'ポジティブ', 1, '日経平均,大発会'),
+('N016', '2026-03-28', '2026-03-28 16:00:00', '社内リサーチ', '市況', '【年末特集】2025年注目セクター - 半導体・AI関連', 'リサーチチームは2025年の注目セクターとして半導体・AI関連を挙げた。生成AI需要の拡大でNVIDIA、東京エレクトロンなどに注目。', '2025年注目セクター', '8035,NVDA', 'ポジティブ', 3, '半導体,AI,2025年展望'),
+('N017', '2026-03-27', '2026-03-27 14:00:00', '財務省', '税制', '相続税の税務調査強化へ - 海外資産の把握を重点化', '財務省は2025年度から相続税の税務調査を強化する方針。特に海外資産の把握を重点化し、富裕層の申告漏れ対策を進める。', '相続税調査強化', NULL, 'ニュートラル', 3, '相続税,税務調査'),
+('N018', '2026-03-26', '2026-03-26 10:00:00', '日本経済新聞', '不動産', '都心オフィス空室率、2%台に低下 - 企業の出社回帰で', '都心5区のオフィス空室率が2%台に低下。コロナ後の出社回帰とAI・DX関連企業の拡大で需要が回復している。', '都心オフィス空室率低下', NULL, 'ポジティブ', 3, '不動産,オフィス'),
+('N019', '2026-03-25', '2026-03-25 09:00:00', '内閣府', '経済', 'GDP成長率、2025年は2.0%程度の見通し - 内閣府', '内閣府は2025年度の実質GDP成長率を2.0%程度と予測。インバウンド需要と設備投資の回復が牽引役となる見込み。', 'GDP見通し', NULL, 'ポジティブ', 1, 'GDP,経済成長'),
+('N020', '2026-03-24', '2026-03-24 15:00:00', '社内リサーチ', '市況', '日立製作所、DX需要で業績好調 - 目標株価引き上げ', '日立製作所はDXソリューション事業が好調で業績を牽引。リサーチチームは目標株価を4,200円に引き上げ、投資判断「買い」を維持。', '日立目標株価引き上げ', '6501,日立', 'ポジティブ', 3, 'DX,IT'),
+('N021', '2026-03-23', '2026-03-23 11:00:00', 'Reuters', '市況', 'ソフトバンクG、AI投資加速で注目高まる', 'ソフトバンクグループはAI分野への投資を加速。Armの業績好調と相まって、株価上昇期待が高まっている。', 'ソフトバンクG AI投資', '9984,SBG', 'ポジティブ', 3, 'AI,投資'),
+('N022', '2026-03-22', '2026-03-22 10:00:00', '日本経済新聞', '自動車', 'ホンダ、次世代EV開発に1兆円投資を発表', 'ホンダは2030年までに次世代EV開発に1兆円を投資すると発表。全固体電池の量産化とソフトウェア開発を加速する。', 'ホンダEV投資', '7267,ホンダ', 'ポジティブ', 3, 'EV,自動車'),
+('N023', '2026-03-21', '2026-03-21 14:00:00', '社内リサーチ', '市況', 'デンソー、EV関連部品好調で業績上振れ', 'デンソーはEV関連部品の需要増で業績が上振れ。特に熱マネジメント製品が好調で、営業利益率の改善が続く。', 'デンソー業績上振れ', '6902,デンソー', 'ポジティブ', 3, 'EV,自動車部品'),
+('N024', '2026-03-20', '2026-03-20 09:00:00', 'Bloomberg', '金融', '米FRB、利下げペース鈍化を示唆 - 12月FOMC', '米FRBは12月のFOMCで政策金利を0.25%引き下げたが、来年の利下げペース鈍化を示唆。ドル高・円安圧力が継続する見通し。', 'FRB利下げ鈍化', NULL, 'ニュートラル', 3, '金融政策,FRB,金利'),
+('N025', '2026-03-19', '2026-03-19 15:00:00', '国税庁', '税制', '暦年贈与と相続時精算課税の選択、どちらが有利か - 解説', '2024年税制改正で変更された贈与税制について国税庁が解説資料を公表。暦年贈与と相続時精算課税の選択基準を具体例で示した。', '贈与税制解説', NULL, 'ニュートラル', 3, '贈与税,税制'),
+('N026', '2026-03-18', '2026-03-18 11:00:00', '社内リサーチ', '市況', '信越化学、半導体シリコンウェハー需要回復で上方修正期待', '信越化学工業は半導体シリコンウェハーの需要回復で業績上方修正が期待される。投資判断「買い」、目標株価6,500円。', '信越化学上方修正期待', '4063,信越化学', 'ポジティブ', 3, '半導体,素材'),
+('N027', '2026-03-17', '2026-03-17 10:00:00', '日本経済新聞', '医薬', '第一三共、がん治療薬が米国で好調 - グローバル展開加速', '第一三共の抗がん剤「エンハーツ」が米国市場で売上好調。パートナーのアストラゼネカとの協業でグローバル展開を加速。', '第一三共がん治療薬好調', '4568,第一三共', 'ポジティブ', 3, '医薬品,がん治療'),
+('N028', '2026-03-16', '2026-03-16 14:00:00', '社内リサーチ', '市況', '中外製薬、ロシュとの提携強化で成長加速', '中外製薬は親会社ロシュとの提携を強化し、新薬開発パイプラインを拡充。中長期的な成長が期待される。', '中外製薬成長加速', '4519,中外製薬', 'ポジティブ', 3, '医薬品'),
+('N029', '2026-03-15', '2026-03-15 09:00:00', 'Reuters', '不動産', 'Jリート指数、年初来高値更新 - 金利安定で買い安心感', 'Jリート指数が年初来高値を更新。日銀の金利据え置きで金利上昇懸念が後退し、高配当利回りのJリートに買いが入った。', 'Jリート高値更新', '8951,3283', 'ポジティブ', 3, 'REIT,不動産'),
+('N030', '2026-03-14', '2026-03-14 16:00:00', '東京証券取引所', '市況', '週間売買代金、過去最高を更新 - 海外マネー流入', '東京証券取引所の週間売買代金が過去最高を更新。海外投資家の日本株買いが活発化し、市場の流動性が向上している。', '売買代金最高', NULL, 'ポジティブ', 3, '株式市場,売買代金');
 
 -- 残り20件
 INSERT INTO NEWS_ARTICLES VALUES
-('N031', '2024-12-13', '2024-12-13 10:00:00', '日本経済新聞', '経済', '賃上げ率、2025年春闘は5%超の見通し - 経団連', '経団連は2025年春闘の賃上げ率が5%を超える見通しと発表。物価上昇に対応し、実質賃金のプラス転換を目指す。', '賃上げ見通し', NULL, 'ポジティブ', 3, '賃上げ,春闘'),
-('N032', '2024-12-12', '2024-12-12 14:00:00', '市況要約', '金融', '証券担保ローン、低金利で利用拡大 - 信託銀行', '信託銀行の証券担保ローンの利用が拡大。低金利環境と株高を背景に、富裕層の資金ニーズに対応している。', '証券担保ローン利用拡大', NULL, 'ポジティブ', 3, 'ローン,信託銀行'),
-('N033', '2024-12-11', '2024-12-11 11:00:00', 'Bloomberg', '為替', '円安進行、輸出企業に追い風 - 自動車・電機セクター', '円安進行が輸出企業の業績にプラス。特に自動車・電機セクターでは為替差益の拡大が期待される。', '円安輸出企業追い風', '7203,6758', 'ポジティブ', 3, '為替,輸出'),
-('N034', '2024-12-10', '2024-12-10 09:00:00', '日本経済新聞', '金融', 'NISA口座、2024年は過去最高の開設数に', '2024年のNISA口座開設数が過去最高を更新。新NISA制度への移行で投資初心者の参入が加速している。', 'NISA開設最高', NULL, 'ポジティブ', 1, 'NISA,投資'),
-('N035', '2024-12-09', '2024-12-09 15:00:00', '社内リサーチ', '市況', '【投資戦略】インフレ環境下での資産配分', 'リサーチチームはインフレ環境下での推奨資産配分を公表。株式50%、債券30%、オルタナティブ20%のポートフォリオを提案。', '資産配分戦略', NULL, 'ニュートラル', 3, '投資戦略,資産配分'),
-('N036', '2024-12-08', '2024-12-08 10:00:00', '内閣府', '経済', '景気動向指数、3ヶ月連続で改善 - 内閣府発表', '内閣府発表の景気動向指数は3ヶ月連続で改善。設備投資と個人消費の回復が寄与している。', '景気改善', NULL, 'ポジティブ', 1, '景気,経済指標'),
-('N037', '2024-12-07', '2024-12-07 14:00:00', '国税庁', '税制', '事業承継税制の特例措置、2027年末まで延長へ', '事業承継税制の特例措置が2027年末まで延長される見通し。中小企業オーナーの世代交代を後押しする狙い。', '事業承継税制延長', NULL, 'ポジティブ', 3, '事業承継,税制'),
-('N038', '2024-12-06', '2024-12-06 11:00:00', '日本経済新聞', '不動産', '軽井沢・箱根など別荘地、富裕層需要で価格上昇', 'リゾート地の別荘需要が増加。テレワーク定着と富裕層の多拠点生活志向で、軽井沢・箱根などの価格が上昇している。', '別荘地価格上昇', NULL, 'ポジティブ', 1, '不動産,別荘'),
-('N039', '2024-12-05', '2024-12-05 09:00:00', 'Reuters', '商品', '金価格、過去最高値を更新 - 地政学リスクで買い', '金価格が過去最高値を更新。中東情勢の緊迫化と中央銀行の買い増しで、安全資産としての需要が高まっている。', '金価格最高値', NULL, 'ポジティブ', 3, '金,コモディティ'),
-('N040', '2024-12-04', '2024-12-04 15:00:00', '社内リサーチ', '市況', 'Apple、新型iPhone好調で株価上昇', 'AppleのiPhone16シリーズが世界的に好調な売上を記録。AI機能の強化が評価され、株価は年初来高値を更新した。', 'Apple株価上昇', 'AAPL,Apple', 'ポジティブ', 3, 'テック,Apple'),
-('N041', '2024-12-03', '2024-12-03 10:00:00', 'Bloomberg', '市況', 'Microsoft、AI事業拡大でクラウド収益増', 'Microsoftのクラウド事業Azureが好調。AI機能の強化で企業向け需要が拡大し、収益成長が加速している。', 'Microsoft AI事業拡大', 'MSFT,Microsoft', 'ポジティブ', 3, 'テック,AI,クラウド'),
-('N042', '2024-12-02', '2024-12-02 14:00:00', '社内リサーチ', '市況', 'NVIDIA、データセンター需要で売上倍増', 'NVIDIAのデータセンター向けGPU売上が前年比倍増。生成AI需要の爆発的成長で供給が追いつかない状況が続く。', 'NVIDIA売上倍増', 'NVDA,NVIDIA', 'ポジティブ', 5, 'AI,半導体'),
-('N043', '2024-12-01', '2024-12-01 11:00:00', '日本経済新聞', '金融', 'プライベートバンク、富裕層向けサービス拡充競争', '大手証券・銀行がプライベートバンク事業を強化。相続対策や資産運用の高度化ニーズに対応したサービス拡充が進む。', 'PB事業拡充', NULL, 'ニュートラル', 1, 'プライベートバンク,富裕層'),
-('N044', '2024-11-30', '2024-11-30 09:00:00', '財務省', '税制', '海外財産調書の提出義務、5000万円超に引き下げ検討', '財務省は海外財産調書の提出義務基準を現行の5000万円超から引き下げることを検討。富裕層の海外資産把握を強化する狙い。', '海外財産調書基準変更', NULL, 'ニュートラル', 3, '税制,海外資産'),
-('N045', '2024-11-29', '2024-11-29 15:00:00', '社内リサーチ', '市況', '年末ラリー期待高まる - 日経平均4万2000円視野', 'リサーチチームは年末の株高を予想。海外投資家の買いと国内企業の好業績を背景に、日経平均4万2000円も視野に入ると分析。', '年末ラリー期待', NULL, 'ポジティブ', 3, '株式市場,年末'),
-('N046', '2024-11-28', '2024-11-28 10:00:00', '日本経済新聞', '経済', 'インバウンド消費、2024年は過去最高の8兆円見込み', '訪日外国人の消費額が2024年は過去最高の8兆円に達する見込み。円安とアジア富裕層の来日増加が寄与。', 'インバウンド消費最高', NULL, 'ポジティブ', 3, 'インバウンド,消費'),
-('N047', '2024-11-27', '2024-11-27 14:00:00', 'Reuters', '為替', '円相場、年末にかけて円安継続か - アナリスト見通し', '主要アナリストの見通しでは、年末にかけて円安基調が継続する見込み。日米金利差と貿易収支の赤字が円安圧力に。', '円安継続見通し', 'USD/JPY', 'ニュートラル', 3, '為替,円安'),
-('N048', '2024-11-26', '2024-11-26 11:00:00', '市況要約', '信託', '遺言信託利用、前年比20%増 - 相続対策ニーズ高まる', '信託銀行の遺言信託利用が前年比20%増。高齢化と相続税の課税強化を背景に、相続対策へのニーズが高まっている。', '遺言信託利用増', NULL, 'ポジティブ', 3, '遺言信託,相続'),
-('N049', '2024-11-25', '2024-11-25 09:00:00', '日本経済新聞', '経済', 'シニア世代の資産活用、「終活」から「活活」へ', '高齢者の資産活用意識が変化。「死ぬまでに使い切る」から「健康なうちに楽しむ」志向へシフトしている。', 'シニア資産活用', NULL, 'ニュートラル', 1, 'シニア,資産活用'),
-('N050', '2024-11-24', '2024-11-24 15:00:00', '社内リサーチ', '市況', '配当利回り4%超銘柄、投資妙味高まる', '高配当株への注目が高まる。配当利回り4%超の銘柄は金利環境を考慮しても魅力的で、長期投資家に人気。', '高配当株注目', '8058,8001', 'ポジティブ', 3, '配当,投資戦略');
+('N031', '2026-03-13', '2026-03-13 10:00:00', '日本経済新聞', '経済', '賃上げ率、2025年春闘は5%超の見通し - 経団連', '経団連は2025年春闘の賃上げ率が5%を超える見通しと発表。物価上昇に対応し、実質賃金のプラス転換を目指す。', '賃上げ見通し', NULL, 'ポジティブ', 3, '賃上げ,春闘'),
+('N032', '2026-03-12', '2026-03-12 14:00:00', '市況要約', '金融', '証券担保ローン、低金利で利用拡大 - 信託銀行', '信託銀行の証券担保ローンの利用が拡大。低金利環境と株高を背景に、富裕層の資金ニーズに対応している。', '証券担保ローン利用拡大', NULL, 'ポジティブ', 3, 'ローン,信託銀行'),
+('N033', '2026-03-11', '2026-03-11 11:00:00', 'Bloomberg', '為替', '円安進行、輸出企業に追い風 - 自動車・電機セクター', '円安進行が輸出企業の業績にプラス。特に自動車・電機セクターでは為替差益の拡大が期待される。', '円安輸出企業追い風', '7203,6758', 'ポジティブ', 3, '為替,輸出'),
+('N034', '2026-03-10', '2026-03-10 09:00:00', '日本経済新聞', '金融', 'NISA口座、2024年は過去最高の開設数に', '2024年のNISA口座開設数が過去最高を更新。新NISA制度への移行で投資初心者の参入が加速している。', 'NISA開設最高', NULL, 'ポジティブ', 1, 'NISA,投資'),
+('N035', '2026-03-09', '2026-03-09 15:00:00', '社内リサーチ', '市況', '【投資戦略】インフレ環境下での資産配分', 'リサーチチームはインフレ環境下での推奨資産配分を公表。株式50%、債券30%、オルタナティブ20%のポートフォリオを提案。', '資産配分戦略', NULL, 'ニュートラル', 3, '投資戦略,資産配分'),
+('N036', '2026-03-08', '2026-03-08 10:00:00', '内閣府', '経済', '景気動向指数、3ヶ月連続で改善 - 内閣府発表', '内閣府発表の景気動向指数は3ヶ月連続で改善。設備投資と個人消費の回復が寄与している。', '景気改善', NULL, 'ポジティブ', 1, '景気,経済指標'),
+('N037', '2026-03-07', '2026-03-07 14:00:00', '国税庁', '税制', '事業承継税制の特例措置、2027年末まで延長へ', '事業承継税制の特例措置が2027年末まで延長される見通し。中小企業オーナーの世代交代を後押しする狙い。', '事業承継税制延長', NULL, 'ポジティブ', 3, '事業承継,税制'),
+('N038', '2026-03-06', '2026-03-06 11:00:00', '日本経済新聞', '不動産', '軽井沢・箱根など別荘地、富裕層需要で価格上昇', 'リゾート地の別荘需要が増加。テレワーク定着と富裕層の多拠点生活志向で、軽井沢・箱根などの価格が上昇している。', '別荘地価格上昇', NULL, 'ポジティブ', 1, '不動産,別荘'),
+('N039', '2026-03-05', '2026-03-05 09:00:00', 'Reuters', '商品', '金価格、過去最高値を更新 - 地政学リスクで買い', '金価格が過去最高値を更新。中東情勢の緊迫化と中央銀行の買い増しで、安全資産としての需要が高まっている。', '金価格最高値', NULL, 'ポジティブ', 3, '金,コモディティ'),
+('N040', '2026-03-04', '2026-03-04 15:00:00', '社内リサーチ', '市況', 'Apple、新型iPhone好調で株価上昇', 'AppleのiPhone16シリーズが世界的に好調な売上を記録。AI機能の強化が評価され、株価は年初来高値を更新した。', 'Apple株価上昇', 'AAPL,Apple', 'ポジティブ', 3, 'テック,Apple'),
+('N041', '2026-03-03', '2026-03-03 10:00:00', 'Bloomberg', '市況', 'Microsoft、AI事業拡大でクラウド収益増', 'Microsoftのクラウド事業Azureが好調。AI機能の強化で企業向け需要が拡大し、収益成長が加速している。', 'Microsoft AI事業拡大', 'MSFT,Microsoft', 'ポジティブ', 3, 'テック,AI,クラウド'),
+('N042', '2026-03-02', '2026-03-02 14:00:00', '社内リサーチ', '市況', 'NVIDIA、データセンター需要で売上倍増', 'NVIDIAのデータセンター向けGPU売上が前年比倍増。生成AI需要の爆発的成長で供給が追いつかない状況が続く。', 'NVIDIA売上倍増', 'NVDA,NVIDIA', 'ポジティブ', 5, 'AI,半導体'),
+('N043', '2026-03-01', '2026-03-01 11:00:00', '日本経済新聞', '金融', 'プライベートバンク、富裕層向けサービス拡充競争', '大手証券・銀行がプライベートバンク事業を強化。相続対策や資産運用の高度化ニーズに対応したサービス拡充が進む。', 'PB事業拡充', NULL, 'ニュートラル', 1, 'プライベートバンク,富裕層'),
+('N044', '2026-02-30', '2026-02-30 09:00:00', '財務省', '税制', '海外財産調書の提出義務、5000万円超に引き下げ検討', '財務省は海外財産調書の提出義務基準を現行の5000万円超から引き下げることを検討。富裕層の海外資産把握を強化する狙い。', '海外財産調書基準変更', NULL, 'ニュートラル', 3, '税制,海外資産'),
+('N045', '2026-02-29', '2026-02-29 15:00:00', '社内リサーチ', '市況', '年末ラリー期待高まる - 日経平均4万2000円視野', 'リサーチチームは年末の株高を予想。海外投資家の買いと国内企業の好業績を背景に、日経平均4万2000円も視野に入ると分析。', '年末ラリー期待', NULL, 'ポジティブ', 3, '株式市場,年末'),
+('N046', '2026-02-28', '2026-02-28 10:00:00', '日本経済新聞', '経済', 'インバウンド消費、2024年は過去最高の8兆円見込み', '訪日外国人の消費額が2024年は過去最高の8兆円に達する見込み。円安とアジア富裕層の来日増加が寄与。', 'インバウンド消費最高', NULL, 'ポジティブ', 3, 'インバウンド,消費'),
+('N047', '2026-02-27', '2026-02-27 14:00:00', 'Reuters', '為替', '円相場、年末にかけて円安継続か - アナリスト見通し', '主要アナリストの見通しでは、年末にかけて円安基調が継続する見込み。日米金利差と貿易収支の赤字が円安圧力に。', '円安継続見通し', 'USD/JPY', 'ニュートラル', 3, '為替,円安'),
+('N048', '2026-02-26', '2026-02-26 11:00:00', '市況要約', '信託', '遺言信託利用、前年比20%増 - 相続対策ニーズ高まる', '信託銀行の遺言信託利用が前年比20%増。高齢化と相続税の課税強化を背景に、相続対策へのニーズが高まっている。', '遺言信託利用増', NULL, 'ポジティブ', 3, '遺言信託,相続'),
+('N049', '2026-02-25', '2026-02-25 09:00:00', '日本経済新聞', '経済', 'シニア世代の資産活用、「終活」から「活活」へ', '高齢者の資産活用意識が変化。「死ぬまでに使い切る」から「健康なうちに楽しむ」志向へシフトしている。', 'シニア資産活用', NULL, 'ニュートラル', 1, 'シニア,資産活用'),
+('N050', '2026-02-24', '2026-02-24 15:00:00', '社内リサーチ', '市況', '配当利回り4%超銘柄、投資妙味高まる', '高配当株への注目が高まる。配当利回り4%超の銘柄は金利環境を考慮しても魅力的で、長期投資家に人気。', '高配当株注目', '8058,8001', 'ポジティブ', 3, '配当,投資戦略');
 
 SELECT 'Part 4-1: Trust products & News completed!' AS STATUS;
 
@@ -1254,7 +1175,7 @@ USE WAREHOUSE COMPUTE_WH;
 
 INSERT INTO ANALYST_REPORTS VALUES
 -- トヨタ（デモで重要）
-('AR001', '2025-01-15', '7203', 'トヨタ自動車', '田中アナリスト', '自動車チーム', '買い', '買い', 3500, 3200, 2850, 22.81,
+('AR001', '2026-03-15', '7203', 'トヨタ自動車', '田中アナリスト', '自動車チーム', '買い', '買い', 3500, 3200, 2850, 22.81,
  'トヨタ自動車：ハイブリッド好調と円安効果で目標株価引き上げ',
  'トヨタ自動車の投資判断「買い」を継続し、目標株価を3,200円から3,500円に引き上げる。北米市場でのハイブリッド車販売が予想を上回るペースで推移しており、来期業績の上方修正が期待される。',
  '【投資の着眼点】1)北米ハイブリッド販売好調：RAV4、カムリのHVモデルが前年比30%増。2)円安効果：1円の円安で営業利益450億円の押し上げ効果。3)EV戦略の進展：全固体電池搭載車を2026年に投入予定。【バリュエーション】PER12倍は同業他社比で割安。配当利回り2.8%も魅力的。',
@@ -1262,7 +1183,7 @@ INSERT INTO ANALYST_REPORTS VALUES
  '【2025年度予想】売上高45兆円（+5%）、営業利益5.5兆円（+8%）、純利益4.2兆円（+6%）。配当は年間80円を予想。',
  'トヨタ自動車は、ハイブリッド技術の強みを活かした成長が続く見通し。特に北米市場では、EVへの移行が遅れる中でHV需要が拡大しており、トヨタはその恩恵を最も受ける立場にある。来期は営業利益5兆円超えが視野に入り、株価の上昇余地は大きいと判断する。'),
 
-('AR002', '2024-12-20', '7203', 'トヨタ自動車', '田中アナリスト', '自動車チーム', '買い', '中立', 3200, 2800, 2750, 16.36,
+('AR002', '2026-03-20', '7203', 'トヨタ自動車', '田中アナリスト', '自動車チーム', '買い', '中立', 3200, 2800, 2750, 16.36,
  'トヨタ自動車：投資判断を「中立」から「買い」に引き上げ',
  'トヨタ自動車の投資判断を「中立」から「買い」に引き上げる。米国でのHV販売好調と為替の円安進行を評価。',
  '北米でのハイブリッド車販売が好調で、市場シェアを拡大中。EVへの過渡期においてHV戦略が奏功している。',
@@ -1271,7 +1192,7 @@ INSERT INTO ANALYST_REPORTS VALUES
  '投資判断引き上げの詳細レポート'),
 
 -- ソニー
-('AR003', '2025-01-12', '6758', 'ソニーグループ', '山本アナリスト', 'テクノロジーチーム', '買い', '買い', 17500, 16000, 15200, 15.13,
+('AR003', '2026-03-12', '6758', 'ソニーグループ', '山本アナリスト', 'テクノロジーチーム', '買い', '買い', 17500, 16000, 15200, 15.13,
  'ソニーグループ：ゲーム・音楽好調で目標株価引き上げ',
  'ソニーグループの投資判断「買い」を継続、目標株価を16,000円から17,500円に引き上げ。PS5販売と音楽ストリーミングが好調。',
  '【投資の着眼点】1)ゲーム事業：PS5の累計販売台数が6,000万台突破。ソフト販売も好調。2)音楽事業：ストリーミング収入が前年比15%増。3)映画事業：スパイダーマン新作が大ヒット。',
@@ -1280,7 +1201,7 @@ INSERT INTO ANALYST_REPORTS VALUES
  'エンターテインメント複合企業として安定した収益基盤を構築。バリュエーション面でも魅力的。'),
 
 -- KDDI
-('AR004', '2025-01-06', '9433', 'KDDI', '佐藤アナリスト', '通信チーム', '買い', '買い', 5200, 5000, 4650, 11.83,
+('AR004', '2026-03-06', '9433', 'KDDI', '佐藤アナリスト', '通信チーム', '買い', '買い', 5200, 5000, 4650, 11.83,
  'KDDI：5G投資と法人DXで成長継続',
  'KDDIの投資判断「買い」を継続。5G関連投資の拡大と法人向けDXサービスの成長を評価。安定した配当も魅力。',
  '5G基地局の展開が順調に進み、ARPUの改善が期待される。法人向けDXサービスも高成長を維持。',
@@ -1289,7 +1210,7 @@ INSERT INTO ANALYST_REPORTS VALUES
  '通信セクターの中で最も安定した銘柄。ディフェンシブ銘柄として推奨。'),
 
 -- 三菱商事
-('AR005', '2025-01-05', '8058', '三菱商事', '鈴木アナリスト', '商社チーム', '買い', '買い', 3800, 3500, 3200, 18.75,
+('AR005', '2026-03-05', '8058', '三菱商事', '鈴木アナリスト', '商社チーム', '買い', '買い', 3800, 3500, 3200, 18.75,
  '三菱商事：資源高継続と非資源成長で最高益更新へ',
  '三菱商事の投資判断「買い」を継続。資源価格の高止まりと非資源分野の成長で最高益更新が視野に。配当利回り4%超も魅力。',
  '【投資の着眼点】1)資源価格：LNGと銅価格の高止まりが業績を下支え。2)非資源事業：ローソン、食品事業が安定成長。3)株主還元：総還元性向40%、増配期待。',
@@ -1298,7 +1219,7 @@ INSERT INTO ANALYST_REPORTS VALUES
  'バフェット氏の投資で注目度上昇。バリュエーション面で割安。'),
 
 -- 伊藤忠商事
-('AR006', '2025-01-04', '8001', '伊藤忠商事', '鈴木アナリスト', '商社チーム', '買い', '買い', 8500, 8000, 7200, 18.06,
+('AR006', '2026-03-04', '8001', '伊藤忠商事', '鈴木アナリスト', '商社チーム', '買い', '買い', 8500, 8000, 7200, 18.06,
  '伊藤忠商事：非資源ビジネスで安定成長',
  '伊藤忠商事の投資判断「買い」を継続。食料・繊維など非資源事業の成長が続き、業績の安定性が高い。',
  '非資源事業の比率が高く、資源価格変動の影響を受けにくい。ファミリーマート事業も堅調。',
@@ -1307,7 +1228,7 @@ INSERT INTO ANALYST_REPORTS VALUES
  '商社セクターの中で最も安定性の高い銘柄。長期保有に適す。'),
 
 -- 日立
-('AR007', '2024-12-24', '6501', '日立製作所', '山本アナリスト', 'テクノロジーチーム', '買い', '買い', 4200, 3800, 3800, 10.53,
+('AR007', '2026-03-24', '6501', '日立製作所', '山本アナリスト', 'テクノロジーチーム', '買い', '買い', 4200, 3800, 3800, 10.53,
  '日立製作所：DX需要で業績好調継続',
  '日立製作所の投資判断「買い」を継続。DXソリューション事業の成長が続き、営業利益率の改善が進む。',
  'Lumadaビジネスが好調で、デジタル売上高比率が50%に迫る。社会インフラ事業も堅調。',
@@ -1316,7 +1237,7 @@ INSERT INTO ANALYST_REPORTS VALUES
  '構造改革の成果が出ており、成長軌道に乗った。グローバルIT企業として評価すべき。'),
 
 -- ソフトバンクG
-('AR008', '2024-12-23', '9984', 'ソフトバンクグループ', '中村アナリスト', '投資会社チーム', 'やや強気', 'やや強気', 12000, 11000, 9500, 26.32,
+('AR008', '2026-03-23', '9984', 'ソフトバンクグループ', '中村アナリスト', '投資会社チーム', 'やや強気', 'やや強気', 12000, 11000, 9500, 26.32,
  'ソフトバンクG：Arm好調でNAVディスカウント縮小へ',
  'ソフトバンクグループの投資判断「やや強気」を継続。Armの業績好調でNAVディスカウントの縮小が期待される。',
  'Armの売上が前年比40%増と好調。AI需要の拡大でライセンス収入が増加。',
@@ -1325,7 +1246,7 @@ INSERT INTO ANALYST_REPORTS VALUES
  '投資会社としての評価が難しいが、Armの成長を考慮するとポジティブ。'),
 
 -- 信越化学
-('AR009', '2024-12-18', '4063', '信越化学工業', '田中アナリスト', '素材チーム', '買い', '買い', 6500, 6000, 5800, 12.07,
+('AR009', '2026-03-18', '4063', '信越化学工業', '田中アナリスト', '素材チーム', '買い', '買い', 6500, 6000, 5800, 12.07,
  '信越化学：半導体需要回復で上方修正期待',
  '信越化学の投資判断「買い」を継続。半導体シリコンウェハーの需要回復で業績上方修正が期待される。',
  '300mmウェハーの需要が回復基調。塩ビ事業も堅調を維持。',
@@ -1334,7 +1255,7 @@ INSERT INTO ANALYST_REPORTS VALUES
  '半導体セクターの中で最も安定した銘柄。長期投資に最適。'),
 
 -- 第一三共
-('AR010', '2024-12-17', '4568', '第一三共', '井上アナリスト', '医薬品チーム', '買い', '買い', 5500, 5000, 4800, 14.58,
+('AR010', '2026-03-17', '4568', '第一三共', '井上アナリスト', '医薬品チーム', '買い', '買い', 5500, 5000, 4800, 14.58,
  '第一三共：がん治療薬エンハーツが牽引',
  '第一三共の投資判断「買い」を継続。抗がん剤エンハーツの売上拡大が業績を牽引。新薬パイプラインも充実。',
  'エンハーツの適応拡大が進み、売上は年間1兆円規模に成長見込み。アストラゼネカとの提携も順調。',
@@ -1343,7 +1264,7 @@ INSERT INTO ANALYST_REPORTS VALUES
  'がん領域のリーダー企業として高く評価。'),
 
 -- 中外製薬
-('AR011', '2024-12-16', '4519', '中外製薬', '井上アナリスト', '医薬品チーム', '買い', '買い', 7000, 6500, 6200, 12.90,
+('AR011', '2026-03-16', '4519', '中外製薬', '井上アナリスト', '医薬品チーム', '買い', '買い', 7000, 6500, 6200, 12.90,
  '中外製薬：ロシュとの提携で成長加速',
  '中外製薬の投資判断「買い」を継続。親会社ロシュとの提携強化で新薬開発が加速。アクテムラも堅調。',
  'ロシュの開発品を日本で販売するライセンス契約が収益の柱。自社開発品も増加。',
@@ -1352,7 +1273,7 @@ INSERT INTO ANALYST_REPORTS VALUES
  '製薬セクターで最も高い収益性を誇る。'),
 
 -- ホンダ
-('AR012', '2024-12-22', '7267', 'ホンダ', '田中アナリスト', '自動車チーム', 'やや強気', '中立', 1900, 1600, 1650, 15.15,
+('AR012', '2026-03-22', '7267', 'ホンダ', '田中アナリスト', '自動車チーム', 'やや強気', '中立', 1900, 1600, 1650, 15.15,
  'ホンダ：EV投資加速で投資判断引き上げ',
  'ホンダの投資判断を「中立」から「やや強気」に引き上げ。EV戦略の明確化と北米事業の好調を評価。',
  '北米でのCR-V、Accordが好調。EV専用工場の建設も順調に進む。',
@@ -1361,7 +1282,7 @@ INSERT INTO ANALYST_REPORTS VALUES
  'EV化への対応が進み、投資妙味が高まった。'),
 
 -- デンソー
-('AR013', '2024-12-21', '6902', 'デンソー', '田中アナリスト', '自動車部品チーム', '買い', '買い', 2800, 2600, 2400, 16.67,
+('AR013', '2026-03-21', '6902', 'デンソー', '田中アナリスト', '自動車部品チーム', '買い', '買い', 2800, 2600, 2400, 16.67,
  'デンソー：EV関連部品で成長加速',
  'デンソーの投資判断「買い」を継続。EV関連部品、特に熱マネジメント製品の需要拡大が成長を牽引。',
  '熱マネジメント、電動パワートレインが好調。トヨタ向け売上も安定。',
@@ -1370,7 +1291,7 @@ INSERT INTO ANALYST_REPORTS VALUES
  'トヨタグループのEV化恩恵を最も受ける銘柄。'),
 
 -- Apple
-('AR014', '2024-12-04', 'AAPL', 'Apple', 'Smithアナリスト', 'グローバルテックチーム', '買い', '買い', 210, 195, 185, 13.51,
+('AR014', '2026-03-04', 'AAPL', 'Apple', 'Smithアナリスト', 'グローバルテックチーム', '買い', '買い', 210, 195, 185, 13.51,
  'Apple：iPhone16好調とAI機能強化で成長継続',
  'Appleの投資判断「買い」を継続。iPhone16の販売好調とAI機能Apple Intelligenceへの期待で株価上昇が見込まれる。',
  'iPhone16シリーズは初期販売が好調。サービス事業も20%成長が続く。',
@@ -1379,7 +1300,7 @@ INSERT INTO ANALYST_REPORTS VALUES
  'テック株の中で最も安定した収益基盤を持つ。長期保有推奨。'),
 
 -- Microsoft
-('AR015', '2024-12-03', 'MSFT', 'Microsoft', 'Smithアナリスト', 'グローバルテックチーム', '買い', '買い', 480, 450, 420, 14.29,
+('AR015', '2026-03-03', 'MSFT', 'Microsoft', 'Smithアナリスト', 'グローバルテックチーム', '買い', '買い', 480, 450, 420, 14.29,
  'Microsoft：Copilot牽引でクラウド事業拡大',
  'Microsoftの投資判断「買い」を継続。AI機能Copilotの導入拡大でAzure収益が加速。',
  'Azure売上は前年比30%増。Copilotの企業導入が進む。Office365も堅調。',
@@ -1388,7 +1309,7 @@ INSERT INTO ANALYST_REPORTS VALUES
  'AI時代の最大の受益者として評価。成長と安定性を兼ね備えた銘柄。'),
 
 -- NVIDIA
-('AR016', '2024-12-02', 'NVDA', 'NVIDIA', 'Johnsonアナリスト', 'グローバル半導体チーム', '強気', '強気', 1000, 900, 880, 13.64,
+('AR016', '2026-03-02', 'NVDA', 'NVIDIA', 'Johnsonアナリスト', 'グローバル半導体チーム', '強気', '強気', 1000, 900, 880, 13.64,
  'NVIDIA：AI需要爆発で供給追いつかず',
  'NVIDIAの投資判断「強気」を継続。データセンター向けGPUの需要が爆発的に拡大し、供給が追いつかない状況。',
  'H100、H200の需要が供給を大幅に上回る。データセンター売上は前年比3倍。',
@@ -1397,20 +1318,20 @@ INSERT INTO ANALYST_REPORTS VALUES
  'AI半導体市場で圧倒的なシェア。成長株の代表格。'),
 
 -- 追加レポート
-('AR017', '2024-11-30', '8951', '日本ビルファンド投資法人', '木村アナリスト', 'REITチーム', '買い', '買い', 720000, 680000, 650000, 10.77, 'Jリート：金利安定で買い安心感', 'オフィス空室率の改善と金利安定で投資妙味が高まる。', 'オフィス需要回復、配当利回り4%超。', '金利上昇リスク。', '分配金は安定推移を予想。', '高配当を求める投資家に最適。'),
-('AR018', '2024-11-28', '3283', '日本プロロジスリート投資法人', '木村アナリスト', 'REITチーム', '買い', '買い', 360000, 340000, 320000, 12.50, '物流REIT：EC需要拡大で成長継続', 'EC市場拡大で物流施設需要が堅調。高品質物件に強み。', '稼働率99%超を維持。', '金利上昇時の利回り競争力低下。', '増配傾向が続く見込み。', '物流REITの中で最も安定した銘柄。'),
-('AR019', '2024-11-25', '7203', 'トヨタ自動車', '田中アナリスト', '自動車チーム', '買い', '買い', 3200, 3000, 2700, 18.52, 'トヨタ：第2四半期決算レビュー', '2Q決算は市場予想を上回る好決算。通期上方修正の可能性。', '北米、欧州で販売好調。', '中国市場の回復遅れ。', '配当増額の可能性も。', '自動車セクターのトップピック。'),
-('AR020', '2024-11-20', '6758', 'ソニーグループ', '山本アナリスト', 'テクノロジーチーム', '買い', '買い', 16000, 15000, 14500, 10.34, 'ソニー：年末商戦に期待', 'PS5とヘッドホンの年末商戦に期待。映画事業も好調。', '各セグメントで安定成長。', 'CMOSセンサーの価格競争。', '営業利益1.2兆円を予想。', 'エンタメ複合企業として安定。'),
-('AR021', '2024-11-15', '8058', '三菱商事', '鈴木アナリスト', '商社チーム', '買い', '買い', 3500, 3300, 3100, 12.90, '三菱商事：中間決算レビュー', '中間決算は最高益を更新。通期も過去最高益が視野に。', '資源、非資源ともに好調。', '資源価格の下落リスク。', '増配発表の可能性。', '商社株の中で最も注目。'),
-('AR022', '2024-11-10', '4568', '第一三共', '井上アナリスト', '医薬品チーム', '買い', '買い', 5000, 4500, 4600, 8.70, '第一三共：エンハーツ適応拡大', 'エンハーツの適応拡大が承認。さらなる成長が期待される。', 'がん領域でのプレゼンス向上。', '競合品の登場リスク。', '売上1兆円企業へ成長。', 'がん治療領域の成長株。'),
-('AR023', '2024-11-05', '9433', 'KDDI', '佐藤アナリスト', '通信チーム', '買い', '買い', 5000, 4800, 4500, 11.11, 'KDDI：中間決算レビュー', '中間決算は堅調。法人DX事業の成長が続く。', '5G、DXで着実に成長。', '料金値下げ圧力。', '配当は年間145円を予想。', 'ディフェンシブ銘柄として安定。'),
-('AR024', '2024-10-30', '4063', '信越化学工業', '田中アナリスト', '素材チーム', '買い', '買い', 6000, 5500, 5500, 9.09, '信越化学：半導体需要回復の恩恵', '半導体市況回復でウェハー需要が増加。塩ビも堅調。', '高い利益率を維持。', '中国リスク。', '営業利益率30%台を維持。', '素材セクターのトップピック。'),
-('AR025', '2024-10-25', '6501', '日立製作所', '山本アナリスト', 'テクノロジーチーム', '買い', '中立', 3800, 3200, 3500, 8.57, '日立：投資判断引き上げ', 'DX事業の成長を評価し、投資判断を引き上げ。', 'Lumadaビジネス好調。', 'パワー半導体の競争。', 'ROE改善が進む。', '構造改革の成果が出ている。'),
-('AR026', '2024-10-20', '8001', '伊藤忠商事', '鈴木アナリスト', '商社チーム', '買い', '買い', 8000, 7500, 7000, 14.29, '伊藤忠：非資源ビジネスで安定成長', '非資源事業比率の高さが強み。ファミマも堅調。', '安定した収益基盤。', '中国CITICとの提携リスク。', '配当は年間160円を予想。', '商社の中で最も安定。'),
-('AR027', '2024-10-15', 'AAPL', 'Apple', 'Smithアナリスト', 'グローバルテックチーム', '買い', '買い', 195, 180, 175, 11.43, 'Apple：iPhone16発表レビュー', 'iPhone16発表。AI機能Apple Intelligenceに注目。', '初期販売は好調。', '中国市場の競争。', 'サービス収入が成長牽引。', 'テック株の中で最も安定。'),
-('AR028', '2024-10-10', 'MSFT', 'Microsoft', 'Smithアナリスト', 'グローバルテックチーム', '買い', '買い', 450, 420, 410, 9.76, 'Microsoft：Azure成長加速', 'Azure売上成長が加速。Copilot導入も進む。', 'クラウド市場でのシェア拡大。', 'AI投資コスト増。', '営業利益率40%超を維持。', 'AI時代の最大受益者。'),
-('AR029', '2024-10-05', 'NVDA', 'NVIDIA', 'Johnsonアナリスト', 'グローバル半導体チーム', '強気', '強気', 900, 800, 750, 20.00, 'NVIDIA：Blackwellアーキテクチャ発表', '次世代GPUアーキテクチャBlackwellを発表。性能大幅向上。', 'AI市場で圧倒的シェア。', '競合の追い上げ。', '売上1,000億ドル視野。', 'AI半導体の絶対王者。'),
-('AR030', '2024-10-01', '7267', 'ホンダ', '田中アナリスト', '自動車チーム', '中立', '中立', 1600, 1600, 1500, 6.67, 'ホンダ：中間決算プレビュー', '中間決算は堅調な見通し。北米事業が牽引。', '四輪事業の収益改善。', '二輪の中国市場苦戦。', '配当は年間68円を予想。', 'EV戦略の進展を注視。');
+('AR017', '2026-02-30', '8951', '日本ビルファンド投資法人', '木村アナリスト', 'REITチーム', '買い', '買い', 720000, 680000, 650000, 10.77, 'Jリート：金利安定で買い安心感', 'オフィス空室率の改善と金利安定で投資妙味が高まる。', 'オフィス需要回復、配当利回り4%超。', '金利上昇リスク。', '分配金は安定推移を予想。', '高配当を求める投資家に最適。'),
+('AR018', '2026-02-28', '3283', '日本プロロジスリート投資法人', '木村アナリスト', 'REITチーム', '買い', '買い', 360000, 340000, 320000, 12.50, '物流REIT：EC需要拡大で成長継続', 'EC市場拡大で物流施設需要が堅調。高品質物件に強み。', '稼働率99%超を維持。', '金利上昇時の利回り競争力低下。', '増配傾向が続く見込み。', '物流REITの中で最も安定した銘柄。'),
+('AR019', '2026-02-25', '7203', 'トヨタ自動車', '田中アナリスト', '自動車チーム', '買い', '買い', 3200, 3000, 2700, 18.52, 'トヨタ：第2四半期決算レビュー', '2Q決算は市場予想を上回る好決算。通期上方修正の可能性。', '北米、欧州で販売好調。', '中国市場の回復遅れ。', '配当増額の可能性も。', '自動車セクターのトップピック。'),
+('AR020', '2026-02-20', '6758', 'ソニーグループ', '山本アナリスト', 'テクノロジーチーム', '買い', '買い', 16000, 15000, 14500, 10.34, 'ソニー：年末商戦に期待', 'PS5とヘッドホンの年末商戦に期待。映画事業も好調。', '各セグメントで安定成長。', 'CMOSセンサーの価格競争。', '営業利益1.2兆円を予想。', 'エンタメ複合企業として安定。'),
+('AR021', '2026-02-15', '8058', '三菱商事', '鈴木アナリスト', '商社チーム', '買い', '買い', 3500, 3300, 3100, 12.90, '三菱商事：中間決算レビュー', '中間決算は最高益を更新。通期も過去最高益が視野に。', '資源、非資源ともに好調。', '資源価格の下落リスク。', '増配発表の可能性。', '商社株の中で最も注目。'),
+('AR022', '2026-02-10', '4568', '第一三共', '井上アナリスト', '医薬品チーム', '買い', '買い', 5000, 4500, 4600, 8.70, '第一三共：エンハーツ適応拡大', 'エンハーツの適応拡大が承認。さらなる成長が期待される。', 'がん領域でのプレゼンス向上。', '競合品の登場リスク。', '売上1兆円企業へ成長。', 'がん治療領域の成長株。'),
+('AR023', '2026-02-05', '9433', 'KDDI', '佐藤アナリスト', '通信チーム', '買い', '買い', 5000, 4800, 4500, 11.11, 'KDDI：中間決算レビュー', '中間決算は堅調。法人DX事業の成長が続く。', '5G、DXで着実に成長。', '料金値下げ圧力。', '配当は年間145円を予想。', 'ディフェンシブ銘柄として安定。'),
+('AR024', '2026-01-30', '4063', '信越化学工業', '田中アナリスト', '素材チーム', '買い', '買い', 6000, 5500, 5500, 9.09, '信越化学：半導体需要回復の恩恵', '半導体市況回復でウェハー需要が増加。塩ビも堅調。', '高い利益率を維持。', '中国リスク。', '営業利益率30%台を維持。', '素材セクターのトップピック。'),
+('AR025', '2026-01-25', '6501', '日立製作所', '山本アナリスト', 'テクノロジーチーム', '買い', '中立', 3800, 3200, 3500, 8.57, '日立：投資判断引き上げ', 'DX事業の成長を評価し、投資判断を引き上げ。', 'Lumadaビジネス好調。', 'パワー半導体の競争。', 'ROE改善が進む。', '構造改革の成果が出ている。'),
+('AR026', '2026-01-20', '8001', '伊藤忠商事', '鈴木アナリスト', '商社チーム', '買い', '買い', 8000, 7500, 7000, 14.29, '伊藤忠：非資源ビジネスで安定成長', '非資源事業比率の高さが強み。ファミマも堅調。', '安定した収益基盤。', '中国CITICとの提携リスク。', '配当は年間160円を予想。', '商社の中で最も安定。'),
+('AR027', '2026-01-15', 'AAPL', 'Apple', 'Smithアナリスト', 'グローバルテックチーム', '買い', '買い', 195, 180, 175, 11.43, 'Apple：iPhone16発表レビュー', 'iPhone16発表。AI機能Apple Intelligenceに注目。', '初期販売は好調。', '中国市場の競争。', 'サービス収入が成長牽引。', 'テック株の中で最も安定。'),
+('AR028', '2026-01-10', 'MSFT', 'Microsoft', 'Smithアナリスト', 'グローバルテックチーム', '買い', '買い', 450, 420, 410, 9.76, 'Microsoft：Azure成長加速', 'Azure売上成長が加速。Copilot導入も進む。', 'クラウド市場でのシェア拡大。', 'AI投資コスト増。', '営業利益率40%超を維持。', 'AI時代の最大受益者。'),
+('AR029', '2026-01-05', 'NVDA', 'NVIDIA', 'Johnsonアナリスト', 'グローバル半導体チーム', '強気', '強気', 900, 800, 750, 20.00, 'NVIDIA：Blackwellアーキテクチャ発表', '次世代GPUアーキテクチャBlackwellを発表。性能大幅向上。', 'AI市場で圧倒的シェア。', '競合の追い上げ。', '売上1,000億ドル視野。', 'AI半導体の絶対王者。'),
+('AR030', '2026-01-01', '7267', 'ホンダ', '田中アナリスト', '自動車チーム', '中立', '中立', 1600, 1600, 1500, 6.67, 'ホンダ：中間決算プレビュー', '中間決算は堅調な見通し。北米事業が牽引。', '四輪事業の収益改善。', '二輪の中国市場苦戦。', '配当は年間68円を予想。', 'EV戦略の進展を注視。');
 
 -- ============================================================================
 -- 2. ローン商品説明書（チャンク分割済み）
