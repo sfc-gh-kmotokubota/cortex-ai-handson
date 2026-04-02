@@ -1853,7 +1853,19 @@ CREATE OR REPLACE STAGE SNOWFINANCE_DB.DEMO_SCHEMA.PROSPECTUS_STAGE
 -- ステージ確認
 SHOW STAGES IN SCHEMA SNOWFINANCE_DB.DEMO_SCHEMA;
 
-SELECT '【Part 7.1】内部ステージ（PROSPECTUS_STAGE）の作成が完了しました' AS STATUS;
+-- GitリポジトリからPDFファイルを内部ステージにコピー
+COPY FILES
+    INTO @SNOWFINANCE_DB.DEMO_SCHEMA.PROSPECTUS_STAGE/
+    FROM @SNOWFINANCE_DB.DEMO_SCHEMA.cortex_ai_handson/branches/main/docs/prospectus/
+    PATTERN = '.*\.pdf';
+
+-- ディレクトリメタデータを更新
+ALTER STAGE SNOWFINANCE_DB.DEMO_SCHEMA.PROSPECTUS_STAGE REFRESH;
+
+-- ステージ内のファイル確認
+LIST @SNOWFINANCE_DB.DEMO_SCHEMA.PROSPECTUS_STAGE;
+
+SELECT '【Part 7.1】内部ステージ作成 & 目論見書PDFのコピーが完了しました' AS STATUS;
 
 -- ============================================================================
 -- 7.2 Streamlit in Snowflake アプリのデプロイ
