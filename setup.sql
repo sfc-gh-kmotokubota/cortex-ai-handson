@@ -1885,15 +1885,6 @@ CREATE OR REPLACE STREAMLIT SNOWFINANCE_DB.DEMO_SCHEMA.WEALTH_MANAGEMENT_DASHBOA
 SELECT '【Part 7.2】Streamlit in Snowflakeアプリのデプロイが完了しました' AS STATUS;
 
 -- ============================================================================
--- 8. Model RBAC の事前準備
--- ============================================================================
--- SNOWFLAKE.MODELS スキーマにモデルオブジェクトを生成（初回のみ数分かかる）
--- Part 1 ハンズオン中の待ち時間をなくすために setup.sql で先行実行しておく
-CALL SNOWFLAKE.MODELS.CORTEX_BASE_MODELS_REFRESH();
-
-SELECT '【Section 8】Model RBAC の事前準備が完了しました' AS STATUS;
-
--- ============================================================================
 -- 完了メッセージ
 -- ============================================================================
 SELECT '
