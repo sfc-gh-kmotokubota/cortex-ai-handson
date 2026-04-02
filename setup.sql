@@ -516,7 +516,7 @@ INSERT INTO DIM_CUSTOMER (
     CUSTOMER_ID, CUSTOMER_NAME, AGE, GENDER, OCCUPATION, PREFECTURE,
     ANNUAL_INCOME_BAND, TOTAL_ASSETS, LIQUID_ASSETS, RISK_TOLERANCE,
     INVESTMENT_PURPOSE, SEGMENT, RM_ID, HAS_NISA, HAS_IDECO, HAS_TRUST_ACCOUNT,
-    INVESTMENT_EXPERIENCE_YEARS, TOTAL_FAMILY_MEMBERS
+    INVESTMENT_EXPERIENCE_YEARS
 )
 WITH g AS (
     SELECT
@@ -536,7 +536,6 @@ WITH g AS (
         UNIFORM(0, 99, RANDOM()) AS r_ideco,
         UNIFORM(0, 99, RANDOM()) AS r_trust,
         UNIFORM(1, 30, RANDOM()) AS exp_yr,
-        UNIFORM(1,  4, RANDOM()) AS fam_cnt,
         UNIFORM(0, 99, RANDOM()) AS asset_pct
     FROM TABLE(GENERATOR(ROWCOUNT => 70))
 ), seg AS (
@@ -608,8 +607,7 @@ SELECT
     (r_nisa  > 30),
     (r_ideco > 50),
     (r_trust > 70),
-    exp_yr,
-    fam_cnt
+    exp_yr
 FROM seg;
 
 -- ============================================================================
