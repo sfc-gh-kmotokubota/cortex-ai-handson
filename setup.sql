@@ -1906,3 +1906,67 @@ SHOW AGENTS IN SCHEMA DEMO_SCHEMA;
 SELECT 'Part 6: Agent creation completed successfully!' AS STATUS;
 SELECT '========================================' AS SEPARATOR;
 SELECT 'セットアップ完了！Snowflake Intelligenceでエージェントをテストしてください。' AS MESSAGE;
+
+
+-- ============================================================================
+-- Part 7: 内部ステージ & Streamlit in Snowflake デプロイ
+-- ============================================================================
+
+USE ROLE ACCOUNTADMIN;
+USE DATABASE SNOWFINANCE_DB;
+USE SCHEMA DEMO_SCHEMA;
+USE WAREHOUSE DEMO_WH;
+
+-- ============================================================================
+-- 7.1 内部ステージの作成（目論見書・ドキュメント格納用）
+-- ============================================================================
+-- 目論見書などのPDFファイルをPUTコマンドでアップロードするための内部ステージ
+CREATE OR REPLACE STAGE SNOWFINANCE_DB.DEMO_SCHEMA.PROSPECTUS_STAGE
+    ENCRYPTION = (TYPE = 'SNOWFLAKE_SSE')
+    DIRECTORY = (ENABLE = TRUE)
+    COMMENT = '目論見書・運用報告書などのドキュメントを格納するための内部ステージ';
+
+-- ファイルアップロード例（SnowSQL / Snowflake CLI から実行）:
+-- PUT file:///path/to/prospectus.pdf @SNOWFINANCE_DB.DEMO_SCHEMA.PROSPECTUS_STAGE AUTO_COMPRESS=FALSE;
+-- PUT後にディレクトリテーブルを最新化:
+-- ALTER STAGE SNOWFINANCE_DB.DEMO_SCHEMA.PROSPECTUS_STAGE REFRESH;
+
+-- ステージ確認
+SHOW STAGES IN SCHEMA SNOWFINANCE_DB.DEMO_SCHEMA;
+
+SELECT '【Part 7.1】内部ステージ（PROSPECTUS_STAGE）の作成が完了しました' AS STATUS;
+
+-- ============================================================================
+-- 7.2 Streamlit in Snowflake アプリのデプロイ
+-- ============================================================================
+-- SNOWFINANCE_DB.DEMO_SCHEMA にもGitリポジトリを登録（Streamlit FROM句で参照するため）
+CREATE OR REPLACE GIT REPOSITORY SNOWFINANCE_DB.DEMO_SCHEMA.cortex_ai_handson
+    API_INTEGRATION = git_api_integration
+    ORIGIN = 'https://github.com/kmotokubota/cortex-ai-handson.git';
+
+CREATE OR REPLACE STREAMLIT SNOWFINANCE_DB.DEMO_SCHEMA.WEALTH_MANAGEMENT_DASHBOARD
+    FROM @cortex_ai_handson/branches/main/streamlit_app
+    MAIN_FILE = 'main.py'
+    QUERY_WAREHOUSE = DEMO_WH
+    COMMENT = '証券営業インテリジェンス - 顧客資産管理・AI分析ダッシュボード';
+
+-- Streamlitアプリへのアクセス権付与（必要に応じてロールを指定）
+-- GRANT USAGE ON STREAMLIT SNOWFINANCE_DB.DEMO_SCHEMA.WEALTH_MANAGEMENT_DASHBOARD TO ROLE <your_role>;
+
+SELECT '【Part 7.2】Streamlit in Snowflakeアプリのデプロイが完了しました' AS STATUS;
+
+-- ============================================================================
+-- 完了メッセージ
+-- ============================================================================
+SELECT '
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Part 7 セットアップが完了しました！
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ ステージ  : SNOWFINANCE_DB.DEMO_SCHEMA.PROSPECTUS_STAGE
+✅ Streamlit : SNOWFINANCE_DB.DEMO_SCHEMA.WEALTH_MANAGEMENT_DASHBOARD
+
+【目論見書のアップロード方法】
+  PUT file:///path/to/file.pdf @SNOWFINANCE_DB.DEMO_SCHEMA.PROSPECTUS_STAGE AUTO_COMPRESS=FALSE;
+  ALTER STAGE SNOWFINANCE_DB.DEMO_SCHEMA.PROSPECTUS_STAGE REFRESH;
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+' AS "✅ Part 7 完了";
