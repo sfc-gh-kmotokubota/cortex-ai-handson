@@ -10,7 +10,7 @@ st.set_page_config(
 session = get_session()
 
 if "selected_model" not in st.session_state:
-    st.session_state.selected_model = "claude-3-5-sonnet"
+    st.session_state.selected_model = "claude-sonnet-4-6"
 
 st.title("💼 富裕層顧客インテリジェンス")
 st.header("証券営業 AI ダッシュボード")
@@ -50,9 +50,9 @@ with col2:
         st.markdown("### 🤖 AI 分析")
         st.markdown("Cortex AI で顧客インサイトを自動生成。")
         st.markdown("""
-        - **AI_COMPLETE** によるアドバイス生成
+        - **AI_COMPLETE** によるアドバイス生成・レポート要約
         - **AI_SENTIMENT** によるニュース感情分析
-        - **AI_SUMMARIZE** によるレポート要約
+        - アナリストレポート構造データ一覧
         """)
 
     with st.container(border=True):
@@ -80,8 +80,8 @@ with st.container(border=True):
         st.markdown("ニュース記事の感情を positive/negative で判定。")
 
     with col3:
-        st.markdown("#### 📝 AI_SUMMARIZE")
-        st.markdown("アナリストレポートを自動要約。")
+        st.markdown("#### 📊 アナリストレポート")
+        st.markdown("保有銘柄のレーティング・目標株価を構造表示。")
 
     with col4:
         st.markdown("#### 🔍 AI_EXTRACT")
@@ -109,11 +109,11 @@ with st.expander("📚 データソースについて"):
     st.markdown("""
 | データソース | 説明 |
 |-------------|------|
-| `DIM_CUSTOMER` | 富裕層顧客マスタ（50名） |
+| `DIM_CUSTOMER` | 富裕層顧客マスタ（300名） |
 | `FACT_PORTFOLIO` | 保有銘柄・損益データ |
 | `DIM_LIFE_EVENT` | ライフイベント履歴 |
 | `DIM_FAMILY` | 家族構成データ |
-| `NEWS_ARTICLES` | 関連ニュース（IMPORTANCE: INT 1-5） |
+| `NEWS_ARTICLES` | 関連ニュース（IMPORTANCE: '高'/'中'/'低'） |
 | `ANALYST_REPORTS` | アナリストレポート |
 | `CUSTOMER_WEALTH_SEMANTIC_VIEW` | 顧客資産セマンティックビュー |
 

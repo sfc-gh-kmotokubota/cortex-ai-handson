@@ -196,31 +196,29 @@ if run_btn:
                 st.plotly_chart(fig_sent_pie, use_container_width=True)
 
             with col_chart2:
-                scatter_df = news_df[news_df['SENTIMENT_SCORE'].notna()].copy()
-                if not scatter_df.empty:
-                    fig_scatter = go.Figure()
+                cat_sent = news_df.groupby(['CATEGORY', 'SENTIMENT_LABEL']).size().reset_index(name='CNT')
+                if not cat_sent.empty:
+                    fig_cat_sent = go.Figure()
                     for lbl, color in [('positive', COLORS['positive']),
                                        ('negative', COLORS['negative']),
                                        ('neutral',  COLORS['neutral'])]:
-                        subset = scatter_df[scatter_df['SENTIMENT_LABEL'] == lbl]
+                        subset = cat_sent[cat_sent['SENTIMENT_LABEL'] == lbl]
                         if not subset.empty:
-                            fig_scatter.add_trace(go.Scatter(
-                                x=subset['IMPORTANCE'].tolist(),
-                                y=subset['SENTIMENT_SCORE'].tolist(),
-                                mode='markers',
+                            fig_cat_sent.add_trace(go.Bar(
                                 name=lbl,
-                                marker=dict(color=color, size=8),
-                                text=subset['TITLE'].str[:30].tolist(),
-                                hovertemplate='%{text}<br>重要度:%{x}  スコア:%{y:.3f}'
+                                x=subset['CATEGORY'].tolist(),
+                                y=subset['CNT'].tolist(),
+                                marker_color=color
                             ))
-                    fig_scatter.update_layout(
-                        title="重要度 × 感情スコア",
+                    fig_cat_sent.update_layout(
+                        title="カテゴリ別感情分布",
+                        barmode='stack',
                         height=280,
-                        margin=dict(l=20, r=20, t=40, b=40),
-                        xaxis_title="重要度",
-                        yaxis_title="感情スコア"
+                        margin=dict(l=20, r=20, t=40, b=60),
+                        xaxis_tickangle=-30,
+                        legend=dict(orientation="h", yanchor="bottom", y=-0.5)
                     )
-                    st.plotly_chart(fig_scatter, use_container_width=True)
+                    st.plotly_chart(fig_cat_sent, use_container_width=True)
 
             st.markdown("#### 📋 ニュース一覧（感情スコア付き）")
             for _, row in news_df.iterrows():
@@ -240,10 +238,9 @@ if run_btn:
                         st.markdown(f"**{row['TITLE']}**{cat_str}")
                         date_str = str(row.get('PUBLISH_DATE', ''))[:10]
                         st.caption(
-                            f"重要度: {imp_stars}（{imp}）  |  感情: **{lbl}**  |  "
-                            f"スコア: {score:.3f}  |  日付: {date_str}"
+                            f"重要度: {imp_stars}（{imp}）  |  感情: **{lbl}**  |  日付: {date_str}"
                         )
 
 st.markdown("---")
-st.info("💡 AI_SENTIMENT の戻り値: `{label: 'positive'/'negative', score: 0.0-1.0}` — `:label::VARCHAR` でラベル取得")
+st.info("💡 AI_SENTIMENT の戻り値: `{categories:[{name:'overall',sentiment:'positive'/'negative'/'neutral'}]}` — `:categories[0]:sentiment::VARCHAR` でラベル取得")
 st.caption("💡 顧客別のニュース感情分析は「AI 分析」ページで確認できます。")

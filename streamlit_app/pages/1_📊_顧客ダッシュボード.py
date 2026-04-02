@@ -38,9 +38,9 @@ def get_customer_summary():
             COUNT(*)                          AS TOTAL_CUSTOMERS,
             SUM(TOTAL_ASSETS)                 AS TOTAL_AUM,
             AVG(TOTAL_ASSETS)                 AS AVG_AUM,
-            COUNT(CASE WHEN RISK_TOLERANCE = '積極型' THEN 1 END) AS AGGRESSIVE_COUNT,
-            COUNT(CASE WHEN RISK_TOLERANCE = '安定型' THEN 1 END) AS CONSERVATIVE_COUNT,
-            COUNT(CASE WHEN RISK_TOLERANCE = 'バランス型' THEN 1 END) AS BALANCED_COUNT
+            COUNT(CASE WHEN RISK_TOLERANCE = '積極的' THEN 1 END)   AS AGGRESSIVE_COUNT,
+            COUNT(CASE WHEN RISK_TOLERANCE = '保守的' THEN 1 END)  AS CONSERVATIVE_COUNT,
+            COUNT(CASE WHEN RISK_TOLERANCE = 'やや積極的' THEN 1 END)  AS MODERATE_COUNT
         FROM SNOWFINANCE_DB.DEMO_SCHEMA.DIM_CUSTOMER
     """).to_pandas()
     return df.iloc[0].to_dict()
@@ -85,7 +85,7 @@ def get_life_events():
             l.STATUS
         FROM SNOWFINANCE_DB.DEMO_SCHEMA.DIM_LIFE_EVENT l
         JOIN SNOWFINANCE_DB.DEMO_SCHEMA.DIM_CUSTOMER c ON l.CUSTOMER_ID = c.CUSTOMER_ID
-        ORDER BY l.EXPECTED_DATE DESC
+        ORDER BY l.EXPECTED_DATE ASC
         LIMIT 20
     """).to_pandas()
 
@@ -107,7 +107,7 @@ with col2:
 with col3:
     st.metric("平均 AUM", format_oku(summary.get('AVG_AUM', 0)))
 with col4:
-    st.metric("積極型顧客", f"{int(summary.get('AGGRESSIVE_COUNT', 0))}名")
+    st.metric("積極的顧客", f"{int(summary.get('AGGRESSIVE_COUNT', 0))}名")
 
 st.markdown("---")
 
@@ -120,7 +120,7 @@ with col_left:
             labels=risk_dist['RISK_TOLERANCE'].tolist(),
             values=risk_dist['CNT'].tolist(),
             hole=0.45,
-            marker_colors=[COLORS['primary'], COLORS['accent'], COLORS['positive']]
+            marker_colors=[COLORS['primary'], COLORS['accent'], COLORS['positive'], COLORS['secondary']]
         )])
         fig.update_layout(height=320, margin=dict(l=20, r=20, t=20, b=40),
                           legend=dict(orientation="h", yanchor="bottom", y=-0.2))
