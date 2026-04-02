@@ -109,7 +109,7 @@ with st.expander("📚 データソースについて"):
     st.markdown("""
 | データソース | 説明 |
 |-------------|------|
-| `DIM_CUSTOMER` | 富裕層顧客マスタ（300名） |
+| `DIM_CUSTOMER` | 富裕層顧客マスタ（100名） |
 | `FACT_PORTFOLIO` | 保有銘柄・損益データ |
 | `DIM_LIFE_EVENT` | ライフイベント履歴 |
 | `DIM_FAMILY` | 家族構成データ |
