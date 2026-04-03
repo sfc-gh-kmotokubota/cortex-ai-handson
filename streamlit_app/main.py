@@ -27,7 +27,7 @@ st.subheader("📌 機能一覧")
 col1, col2 = st.columns(2)
 
 with col1:
-    with st.container(border=True):
+    with st.container():
         st.markdown("### 📊 顧客ダッシュボード")
         st.markdown("富裕層顧客の全体像を把握。")
         st.markdown("""
@@ -36,7 +36,7 @@ with col1:
         - ライフイベント一覧
         """)
 
-    with st.container(border=True):
+    with st.container():
         st.markdown("### 💰 ポートフォリオ分析")
         st.markdown("顧客別の資産配分と損益を可視化。")
         st.markdown("""
@@ -46,7 +46,7 @@ with col1:
         """)
 
 with col2:
-    with st.container(border=True):
+    with st.container():
         st.markdown("### 🤖 AI 分析")
         st.markdown("Cortex AI で顧客インサイトを自動生成。")
         st.markdown("""
@@ -55,7 +55,7 @@ with col2:
         - アナリストレポート構造データ一覧
         """)
 
-    with st.container(border=True):
+    with st.container():
         st.markdown("### 📰 ニュース分析")
         st.markdown("関連ニュースの重要度・感情を可視化。")
         st.markdown("""
@@ -68,7 +68,7 @@ st.markdown("---")
 
 st.subheader("🚀 活用している Snowflake Cortex AI 関数")
 
-with st.container(border=True):
+with st.container():
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
@@ -91,7 +91,7 @@ st.markdown("---")
 
 st.subheader("🎯 クイックスタート")
 
-with st.container(border=True):
+with st.container():
     st.markdown("""
 **はじめての方へ**
 
