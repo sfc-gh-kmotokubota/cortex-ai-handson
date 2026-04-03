@@ -119,7 +119,7 @@ AIの提案:
 ## 体験ポイント
 
 ### セキュリティ（Part 1）
-> 「AIが使う個人情報を自動マスキング。誰がどのAI機能をいつ使ったかを監査ログで完全トレース。」
+> 「AI機能を使えるロールを制限し、データ処理リージョンをコントロール。エンタープライズ要件に対応したガバナンスを設定する。」
 
 ### AI Functions（Part 2）
 > 「2,000文字のアナリストレポートが3行に。訪問準備1時間が10秒に。」
@@ -151,15 +151,6 @@ AIの提案:
 | Cortex Search | `ANALYST_REPORT_SEARCH_SERVICE` | アナリストレポート検索 |
 | Cortex Search | `FUND_DOCS_SEARCH_SERVICE` | ファンド目論見書検索 |
 | Cortex Agent | `WEALTH_MANAGEMENT_ASSISTANT_AGENT` | 統合AIアシスタント |
-
----
-
-## セキュリティ（Part 1 参照）
-
-- **クロスリージョン制御**: データ処理リージョンを限定可能
-- **CORTEX_USER RBAC**: AI機能を使えるロールを制限
-- **監査ログ**: QUERY_HISTORY でAI使用状況をトレース
-- **多層マスキング**: マスキングポリシー + AI_REDACT で個人情報保護
 
 ---
 
