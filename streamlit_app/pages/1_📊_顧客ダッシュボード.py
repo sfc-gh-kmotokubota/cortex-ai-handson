@@ -155,7 +155,7 @@ filtered = customers if selected_risk == "全て" else customers[customers['RISK
 display_customers = filtered.copy()
 display_customers['TOTAL_ASSETS'] = display_customers['TOTAL_ASSETS'].apply(format_oku)
 display_customers.columns = ['顧客ID', '氏名', '年齢', '職業', 'リスク許容度', '総資産', '投資経験']
-st.dataframe(display_customers, use_container_width=True, hide_index=True)
+st.dataframe(display_customers, use_container_width=True)
 
 st.markdown("---")
 
@@ -163,7 +163,7 @@ st.subheader("📅 最近のライフイベント")
 
 if not life_events.empty:
     for _, row in life_events.iterrows():
-        with st.container(border=True):
+        with st.container():
             col_a, col_b = st.columns([3, 1])
             with col_a:
                 st.markdown(f"**{row['CUSTOMER_NAME']}** — {row['EVENT_TYPE']}")

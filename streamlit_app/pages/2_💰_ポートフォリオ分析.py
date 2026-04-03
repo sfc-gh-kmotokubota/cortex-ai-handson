@@ -153,7 +153,7 @@ with col_gain:
     ].reset_index(drop=True)
 
     for rank, (_, row) in enumerate(top_gain.iterrows(), 1):
-        with st.container(border=True):
+        with st.container():
             col_r, col_n = st.columns([1, 5])
             with col_r:
                 st.markdown(f"### {'🥇' if rank==1 else '🥈' if rank==2 else '🥉' if rank==3 else rank}")
@@ -172,7 +172,7 @@ with col_loss:
     ].reset_index(drop=True)
 
     for rank, (_, row) in enumerate(top_loss.iterrows(), 1):
-        with st.container(border=True):
+        with st.container():
             col_r, col_n = st.columns([1, 5])
             with col_r:
                 st.markdown(f"### {rank}")
@@ -195,7 +195,7 @@ disp['UNREALIZED_GAIN_PCT'] = disp['UNREALIZED_GAIN_PCT'].apply(lambda x: f"{x:+
 disp['ACQUISITION_PRICE']    = disp['ACQUISITION_PRICE'].apply(lambda x: f"{x:,.0f}" if pd.notna(x) else "-")
 disp['CURRENT_PRICE']     = disp['CURRENT_PRICE'].apply(lambda x: f"{x:,.0f}" if pd.notna(x) else "-")
 disp.columns = ['コード', '銘柄名', 'クラス', '数量', '取得単価', '現在値', '時価', '含み損益', '損益率']
-st.dataframe(disp, use_container_width=True, hide_index=True)
+st.dataframe(disp, use_container_width=True)
 
 st.markdown("---")
 st.caption("💡 AI による投資アドバイスは「AI 分析」ページで確認できます。")

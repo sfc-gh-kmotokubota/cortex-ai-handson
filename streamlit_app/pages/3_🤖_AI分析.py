@@ -209,7 +209,7 @@ with tab1:
     st.subheader("🤖 AI 投資アドバイス")
     st.markdown(f"**{selected_name}** のポートフォリオを分析して、投資アドバイスを生成します。")
 
-    with st.container(border=True):
+    with st.container():
         col_info1, col_info2, col_info3 = st.columns(3)
         col_info1.metric("顧客", selected_name)
         col_info2.metric("総資産", format_oku(total_assets))
@@ -219,7 +219,7 @@ with tab1:
         with st.spinner(f"{model_choice} でアドバイスを生成中..."):
             advice = run_ai_advice(selected_id, selected_name, risk, total_assets, model_choice)
 
-        with st.container(border=True):
+        with st.container():
             st.markdown("#### 📋 AI アドバイス")
             st.markdown(advice)
 
@@ -274,7 +274,7 @@ with tab2:
             target_str  = f"¥{int(row['TARGET_PRICE']):,}" if not pd.isna(row['TARGET_PRICE']) else "-"
             current_str = f"¥{int(row['CURRENT_PRICE']):,}" if not pd.isna(row['CURRENT_PRICE']) else "-"
 
-            with st.container(border=True):
+            with st.container():
                 head_col, rating_col, price_col = st.columns([4, 2, 3])
                 with head_col:
                     st.markdown(f"**{row['SECURITY_NAME']}**　`{row['SECURITY_CODE']}`")
@@ -371,7 +371,7 @@ with tab3:
 
                 imp_stars = IMP_STARS_MAP.get(imp, imp)
 
-                with st.container(border=True):
+                with st.container():
                     c1, c2 = st.columns([7, 1])
                     with c1:
                         st.markdown(f"{badge} **{row['TITLE']}**")

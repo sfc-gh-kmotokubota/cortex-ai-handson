@@ -228,7 +228,7 @@ if run_btn:
                 badge = "🟢" if lbl == 'positive' else "🔴" if lbl == 'negative' else "⚪"
                 imp_stars = IMP_STARS_MAP.get(imp, '⭐')
 
-                with st.container(border=True):
+                with st.container():
                     col_b, col_content = st.columns([1, 9])
                     with col_b:
                         st.markdown(f"## {badge}")
