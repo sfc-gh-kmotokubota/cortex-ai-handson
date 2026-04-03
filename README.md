@@ -48,7 +48,7 @@ Snowflake Cortex AI を使った証券営業インテリジェンスシステム
    | 項目 | 値 |
    |---|---|
    | URL | `https://github.com/kmotokubota/cortex-ai-handson` |
-   | 認証 | **Git インテグレーション**を選択 |
+   | 認証 | **API インテグレーション**を選択 |
    | 種別 | **パブリックリポジトリ**として作成 |
 
 4. 「作成」をクリックするとノートブックが Workspace に追加される
