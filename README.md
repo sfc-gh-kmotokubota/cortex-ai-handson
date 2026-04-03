@@ -25,14 +25,53 @@ Snowflake Cortex AI を使った証券営業インテリジェンスシステム
 
 ---
 
-## 実行順序
+## セットアップ
+
+### 前提条件
+- Snowflake アカウント（`ACCOUNTADMIN` ロール推奨）
+- Snowsight へのアクセス
+
+### 手順
+
+#### Step 1 — setup.sql の実行
+
+1. Snowsight の **SQL Editor** を開く
+2. `setup.sql` の内容を貼り付けてすべて実行する
+3. `SNOWFINANCE_DB` / `DEMO_SCHEMA` と各テーブル・ウェアハウスが作成される
+
+#### Step 2 — Workspace に Git リポジトリを追加
+
+1. Snowsight の左メニューから **Workspace** を開く
+2. 「**+ 追加**」→「**Git リポジトリから**」をクリック
+3. 以下を入力する
+
+   | 項目 | 値 |
+   |---|---|
+   | URL | `https://github.com/kmotokubota/cortex-ai-handson` |
+   | 認証 | **Git インテグレーション**を選択 |
+   | 種別 | **パブリックリポジトリ**として作成 |
+
+4. 「作成」をクリックするとノートブックが Workspace に追加される
+
+#### Step 3 — ノートブックを順番に実行
+
+Workspace に追加されたリポジトリから `part1` → `part5` の順に開いて実行する。
 
 ```
-setup.sql（Snowsight SQL Editor で実行）
+setup.sql（SQL Editor）
   ↓
 part1_security → part2_ai_functions → part3_cortex_analyst
   → part4_cortex_search → part5_cortex_agent
 ```
+
+> **注意**: 各 Part は前の Part の実行結果に依存しています。必ず順番通りに実行してください。
+
+### ウェアハウス
+
+| ウェアハウス | サイズ | 用途 |
+|---|---|---|
+| `DEMO_WH` | XSMALL | 通常のSQL・AI Functions・Cortex Analyst |
+| `COMPUTE_WH` | XSMALL | Cortex Search インデックス構築 |
 
 ---
 
@@ -77,25 +116,6 @@ AIの提案:
 
 ---
 
-## セットアップ
-
-### 前提条件
-- Snowflake アカウント（`ACCOUNTADMIN` ロール推奨）
-- Snowflake Notebook（Snowsight）へのアクセス
-
-### 手順
-
-1. Snowsight の SQL Editor で `setup.sql` を実行
-2. 各 Part のノートブックを Snowflake Notebook にインポートして順番に実行
-
-### ウェアハウス
-| ウェアハウス | サイズ | 用途 |
-|---|---|---|
-| `DEMO_WH` | XSMALL | 通常のSQL・AI Functions |
-| `COMPUTE_WH` | XSMALL | Cortex Search インデックス構築 |
-
----
-
 ## 体験ポイント
 
 ### AI Functions（Part 2）
@@ -109,7 +129,7 @@ AIの提案:
 
 ### Cortex Agent（Part 5）
 > 「顧客データ・ニュース・目論見書・商品情報を横断した回答が1つのUIから得られる。
->  ツールを追加するほどAIの回答が賢くなる。」
+>  Snowflake にデータを集めるだけで、AIが自動的に最適なツールを選択して回答する。」
 
 ---
 
