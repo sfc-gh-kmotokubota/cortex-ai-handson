@@ -39,6 +39,15 @@ USE DATABASE SNOWFINANCE_DB;
 CREATE SCHEMA IF NOT EXISTS DEMO_SCHEMA;
 USE SCHEMA DEMO_SCHEMA;
 
+-- ============================================================================
+-- 1.1 Cortex モデルオブジェクトの初期化
+-- ※ CORTEX_MODELS_ALLOWLIST / Model RBAC の前提となるモデルオブジェクトを生成
+-- ※ 実行に数分かかる場合があります
+-- ============================================================================
+USE ROLE ACCOUNTADMIN;
+CALL SNOWFLAKE.MODELS.CORTEX_BASE_MODELS_REFRESH();
+SELECT '【1.1】Cortex モデルオブジェクトの初期化が完了しました' AS STATUS;
+
 CREATE WAREHOUSE IF NOT EXISTS DEMO_WH
     WAREHOUSE_SIZE = 'XSMALL'
     AUTO_SUSPEND = 60
