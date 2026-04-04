@@ -1880,6 +1880,29 @@ LIST @SNOWFINANCE_DB.DEMO_SCHEMA.PROSPECTUS_STAGE;
 SELECT '【Part 7.1】内部ステージ作成 & 目論見書PDFのコピーが完了しました' AS STATUS;
 
 -- ============================================================================
+-- 7.1.1 AI_EXTRACT 用内部ステージの作成（月次レポート画像格納用）
+-- ※ Part 2 の AI_EXTRACT（画像対応）デモで使用
+-- ============================================================================
+CREATE OR REPLACE STAGE SNOWFINANCE_DB.DEMO_SCHEMA.DOCUMENTS_STAGE
+    ENCRYPTION = (TYPE = 'SNOWFLAKE_SSE')
+    DIRECTORY = (ENABLE = TRUE)
+    COMMENT = '月次レポート・運用報告書など AI_EXTRACT 入力用ドキュメントを格納するステージ';
+
+-- Gitリポジトリから月次レポート PNG を内部ステージにコピー
+COPY FILES
+    INTO @SNOWFINANCE_DB.DEMO_SCHEMA.DOCUMENTS_STAGE/
+    FROM @SNOWFINANCE_DB.DEMO_SCHEMA.cortex_ai_handson/branches/main/docs/
+    PATTERN = '.*nomura_monthly_report_p1\.png';
+
+-- ディレクトリメタデータを更新
+ALTER STAGE SNOWFINANCE_DB.DEMO_SCHEMA.DOCUMENTS_STAGE REFRESH;
+
+-- ステージ内のファイル確認
+LIST @SNOWFINANCE_DB.DEMO_SCHEMA.DOCUMENTS_STAGE;
+
+SELECT '【Part 7.1.1】AI_EXTRACT 用ステージ作成 & 月次レポート PNG のコピーが完了しました' AS STATUS;
+
+-- ============================================================================
 -- 7.2 Streamlit in Snowflake アプリのデプロイ
 -- ============================================================================
 CREATE OR REPLACE STREAMLIT SNOWFINANCE_DB.DEMO_SCHEMA.WEALTH_MANAGEMENT_DASHBOARD
