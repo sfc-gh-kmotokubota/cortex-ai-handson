@@ -234,9 +234,12 @@ with tab2:
     if reports_df.empty:
         st.warning("保有銘柄に対するアナリストレポートが見つかりません。")
     else:
-        buy_count  = (reports_df['RATING'] == '買い').sum()
+        BUY_RATINGS  = {'買い', '強気', 'やや強気'}
+        SELL_RATINGS = {'売り', 'やや弱気'}
+        RATING_SCORE = {'売り': 1, 'やや弱気': 2, '中立': 3, 'やや強気': 4, '買い': 5, '強気': 5}
+        buy_count  = reports_df['RATING'].isin(BUY_RATINGS).sum()
         hold_count = (reports_df['RATING'] == '中立').sum()
-        sell_count = (reports_df['RATING'] == '売り').sum()
+        sell_count = reports_df['RATING'].isin(SELL_RATINGS).sum()
         avg_upside = reports_df['UPSIDE_PCT'].mean()
 
         m1, m2, m3, m4 = st.columns(4)
@@ -252,23 +255,24 @@ with tab2:
             prev       = row['PREVIOUS_RATING']
             upside     = row['UPSIDE_PCT']
 
-            if rating != prev:
-                if rating == '買い':
-                    change_icon = "⬆️ 格上げ"
-                    rating_color = COLORS['upgrade']
-                else:
-                    change_icon = "⬇️ 格下げ"
-                    rating_color = COLORS['downgrade']
+            curr_score = RATING_SCORE.get(rating, 3)
+            prev_score = RATING_SCORE.get(prev, 3)
+            if curr_score > prev_score:
+                change_icon = "⬆️ 格上げ"
+                rating_color = COLORS['upgrade']
+            elif curr_score < prev_score:
+                change_icon = "⬇️ 格下げ"
+                rating_color = COLORS['downgrade']
             else:
                 change_icon = "➡️ 維持"
                 rating_color = COLORS['maintain']
 
-            if rating == '買い':
-                rating_badge = "🟢 買い"
-            elif rating == '売り':
-                rating_badge = "🔴 売り"
+            if rating in BUY_RATINGS:
+                rating_badge = f"🟢 {rating}"
+            elif rating in SELL_RATINGS:
+                rating_badge = f"🔴 {rating}"
             else:
-                rating_badge = "⚪ 中立"
+                rating_badge = f"⚪ {rating}"
 
             upside_str  = f"{upside:+.1f}%" if not pd.isna(upside) else "-"
             target_str  = f"¥{int(row['TARGET_PRICE']):,}" if not pd.isna(row['TARGET_PRICE']) else "-"
