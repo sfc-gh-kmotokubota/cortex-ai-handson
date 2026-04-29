@@ -22,7 +22,7 @@ USE DATABASE IDENTIFIER($my_db);
 -- GitHub との API 統合を作成
 CREATE OR REPLACE API INTEGRATION git_api_integration
     API_PROVIDER = git_https_api
-    API_ALLOWED_PREFIXES = ('https://github.com/kmotokubota/')
+    API_ALLOWED_PREFIXES = ('https://github.com/sfc-gh-kmotokubota/')
     ENABLED = TRUE;
 
 -- 登録確認
@@ -1860,7 +1860,7 @@ SHOW STAGES IN SCHEMA SNOWFINANCE_DB.DEMO_SCHEMA;
 -- GitHub リポジトリを登録（DB/Schema が確定した後に作成）
 CREATE OR REPLACE GIT REPOSITORY SNOWFINANCE_DB.DEMO_SCHEMA.cortex_ai_handson
     API_INTEGRATION = git_api_integration
-    ORIGIN = 'https://github.com/kmotokubota/cortex-ai-handson.git';
+    ORIGIN = 'https://github.com/sfc-gh-kmotokubota/cortex-ai-handson.git';
 
 -- 最新コンテンツを取得
 ALTER GIT REPOSITORY SNOWFINANCE_DB.DEMO_SCHEMA.cortex_ai_handson FETCH;
