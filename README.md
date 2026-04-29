@@ -47,7 +47,7 @@ Snowflake Cortex AI を使った証券営業インテリジェンスシステム
 
    | 項目 | 値 |
    |---|---|
-   | URL | `https://github.com/kmotokubota/cortex-ai-handson` |
+   | URL | `https://github.com/sfc-gh-kmotokubota/cortex-ai-handson` |
    | 認証 | **API インテグレーション**を選択 |
    | 種別 | **パブリックリポジトリ**として作成 |
 
