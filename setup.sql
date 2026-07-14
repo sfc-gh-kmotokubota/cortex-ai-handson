@@ -1828,7 +1828,7 @@ SHOW AGENTS IN SCHEMA DEMO_SCHEMA;
 
 SELECT 'Part 6: Agent creation completed successfully!' AS STATUS;
 SELECT '========================================' AS SEPARATOR;
-SELECT 'セットアップ完了！Snowflake Intelligenceでエージェントをテストしてください。' AS MESSAGE;
+SELECT 'セットアップ完了！Snowflake CoWorkでエージェントをテストしてください。' AS MESSAGE;
 
 
 -- ============================================================================

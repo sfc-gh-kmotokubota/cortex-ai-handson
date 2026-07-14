@@ -29,7 +29,7 @@
 ├── 04_fund_docs.ipynb           # ファンド目論見書 PDF 解析と検索インデックス構築
 ├── 05_cortex_analyst.ipynb      # Semantic View 作成と Cortex Analyst（自然言語 to SQL）
 ├── 06_cortex_search.ipynb       # Cortex Search Service とセマンティック検索
-└── 07_cortex_agent.ipynb        # Cortex Agent 作成と Snowflake Intelligence デモ
+└── 07_cortex_agent.ipynb        # Cortex Agent 作成と Snowflake CoWork デモ
 ```
 
 ## Snowflake 環境

@@ -21,7 +21,7 @@ Snowflake Cortex AI を使った証券営業インテリジェンスシステム
 | Part 2 | `part2_ai_functions.ipynb` | AI Functions（要約・感情分析・抽出・分類・マスキング・類似度） | 55分 |
 | Part 3 | `part3_cortex_analyst.ipynb` | Semantic View 作成と Cortex Analyst（自然言語 to SQL） | 45分 |
 | Part 4 | `part4_cortex_search.ipynb` | PDF 解析・Cortex Search Service 作成・セマンティック検索 | 60分 |
-| Part 5 | `part5_cortex_agent.ipynb` | Cortex Agent 作成と Snowflake Intelligence デモ | 40分 |
+| Part 5 | `part5_cortex_agent.ipynb` | Cortex Agent 作成と Snowflake CoWork デモ | 40分 |
 
 ---
 
@@ -95,7 +95,7 @@ part1_security → part2_ai_functions → part3_cortex_analyst
         │       └── ANALYST_REPORT_SEARCH_SERVICE
         │       └── FUND_DOCS_SEARCH_SERVICE（目論見書 PDF）
         │
-        └── Cortex Agent ────────────── Snowflake Intelligence（Part 5）
+        └── Cortex Agent ────────────── Snowflake CoWork（Part 5）
                 └── WEALTH_MANAGEMENT_ASSISTANT_AGENT
 ```
 
